@@ -1,0 +1,614 @@
+<title>AniKotoAPI — Playground</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<style>
+  :root {
+    --canvas: #faf9f5;
+    --surface-card: #ffffff;
+    --surface-inset: #efe9de;
+    --hairline: #e6dfd8;
+    --ink: #141413;
+    --body: #3d3d3a;
+    --muted: #6c6a64;
+    --muted-soft: #8e8b82;
+    --primary: #cc785c;
+    --primary-active: #a9583e;
+    --surface-dark: #181715;
+    --on-dark: #faf9f5;
+    --on-dark-soft: #a09d96;
+    --ok: #4a7c59;
+    --err: #b3432b;
+    --font-display: Georgia, 'Times New Roman', serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --canvas: #181715;
+      --surface-card: #201f1c;
+      --surface-inset: #262420;
+      --hairline: #34322d;
+      --ink: #faf9f5;
+      --body: #d4d1c9;
+      --muted: #a09d96;
+      --muted-soft: #79766e;
+      --primary: #e08a6b;
+      --primary-active: #f0a486;
+    }
+  }
+  :root[data-theme="dark"] {
+    --canvas: #181715; --surface-card: #201f1c; --surface-inset: #262420;
+    --hairline: #34322d; --ink: #faf9f5; --body: #d4d1c9; --muted: #a09d96;
+    --muted-soft: #79766e; --primary: #e08a6b; --primary-active: #f0a486;
+  }
+  :root[data-theme="light"] {
+    --canvas: #faf9f5; --surface-card: #ffffff; --surface-inset: #efe9de;
+    --hairline: #e6dfd8; --ink: #141413; --body: #3d3d3a; --muted: #6c6a64;
+    --muted-soft: #8e8b82; --primary: #cc785c; --primary-active: #a9583e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-body);
+    background: var(--canvas);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  a { color: var(--primary); }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--hairline);
+    background: var(--surface-card);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-wrap: wrap;
+  }
+  .brand {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    white-space: nowrap;
+  }
+  .brand .dot { color: var(--primary); }
+  .baseurl-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 240px;
+  }
+  .baseurl-wrap label { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+  input, select {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    background: var(--surface-inset);
+    border: 1px solid var(--hairline);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 7px 10px;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: var(--primary); }
+  #baseUrl { flex: 1; min-width: 160px; }
+  .badge {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: var(--surface-inset);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .layout {
+    display: flex;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--hairline);
+    height: calc(100vh - 61px);
+    overflow-y: auto;
+    position: sticky;
+    top: 61px;
+    padding: 14px 10px;
+  }
+  #filterBox { width: 100%; margin-bottom: 12px; }
+  .cat-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-soft);
+    padding: 14px 8px 6px;
+  }
+  .ep-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--body);
+    padding: 7px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-family: var(--font-mono);
+  }
+  .ep-item:hover { background: var(--surface-inset); }
+  .ep-item.active { background: var(--primary); color: #fff; }
+  .method-tag {
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--surface-inset);
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .ep-item.active .method-tag { background: rgba(255,255,255,0.25); color: #fff; }
+  .method-tag.post { color: var(--ok); }
+  .ep-item.active .method-tag.post { color: #fff; }
+
+  .main {
+    flex: 1;
+    min-width: 0;
+    padding: 24px 28px;
+  }
+  .panel {
+    background: var(--surface-card);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .req-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .req-header .method-tag { font-size: 0.75rem; padding: 3px 8px; }
+  .req-path {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .req-desc { color: var(--muted); font-size: 0.88rem; margin-bottom: 16px; }
+
+  .param-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .param-label {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .param-label .in-tag {
+    font-size: 0.6rem;
+    background: var(--surface-inset);
+    padding: 1px 4px;
+    border-radius: 4px;
+    color: var(--muted-soft);
+  }
+  .param-row input { width: 100%; }
+  .required-star { color: var(--primary); }
+
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  button.send {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 7px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  button.send:hover { background: var(--primary-active); }
+  button.send:disabled { opacity: 0.6; cursor: wait; }
+  .full-url {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    word-break: break-all;
+  }
+
+  .resp-meta { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .status-pill {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  .status-pill.ok { background: rgba(74,124,89,0.15); color: var(--ok); }
+  .status-pill.err { background: rgba(179,67,43,0.15); color: var(--err); }
+  .time-pill, .type-pill {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: var(--surface-inset);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  pre#respBody {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.55;
+    background: var(--surface-inset);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 16px;
+    overflow: auto;
+    max-height: 60vh;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .placeholder { color: var(--muted-soft); font-style: italic; font-size: 0.85rem; }
+  .k { color: #a9583e; }
+  :root[data-theme="dark"] .k, @media (prefers-color-scheme: dark) { }
+  .s { color: #4a7c59; }
+  .n { color: #4a6fa5; }
+  .b { color: #7c4a9c; }
+  .nul { color: var(--muted-soft); }
+
+  @media (max-width: 860px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--hairline); }
+    .param-row { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="topbar">
+  <div class="brand">AniKoto<span class="dot">API</span> Playground</div>
+  <div class="baseurl-wrap">
+    <label for="baseUrl">Base URL</label>
+    <input id="baseUrl" spellcheck="false" />
+  </div>
+  <span class="badge" id="versionBadge">…</span>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <input id="filterBox" placeholder="Filter endpoints…" spellcheck="false" />
+    <div id="epList"></div>
+  </div>
+
+  <div class="main">
+    <div class="panel" id="reqPanel">
+      <p class="placeholder">Pick an endpoint from the left to get started.</p>
+    </div>
+    <div class="panel" id="respPanel" style="display:none">
+      <div class="resp-meta">
+        <span class="status-pill" id="statusPill"></span>
+        <span class="time-pill" id="timePill"></span>
+        <span class="type-pill" id="typePill"></span>
+      </div>
+      <pre id="respBody"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Endpoint catalog — mirrors src/routes/apiRoutes.js + category.route.js ----
+  var today = new Date().toISOString().slice(0, 10);
+  var CATALOG = [
+    { cat: "System", method: "GET", path: "/health", desc: "Server health, uptime, memory.", params: [] },
+    { cat: "System", method: "GET", path: "/stats", desc: "Request counters and cache summary.", params: [] },
+    { cat: "System", method: "GET", path: "/mirrors", desc: "Live status of every mirror domain.", params: [] },
+    { cat: "System", method: "POST", path: "/mirrors/reset", desc: "Clear the working-mirror cache.", params: [] },
+    { cat: "System", method: "GET", path: "/cache/stats", desc: "In-memory response cache statistics.", params: [] },
+    { cat: "System", method: "GET", path: "/openapi", desc: "OpenAPI 3.0 specification for this API.", params: [] },
+
+    { cat: "Discovery", method: "GET", path: "/", desc: "Homepage sections (spotlight, trending, etc).", params: [] },
+    { cat: "Discovery", method: "GET", path: "/spotlight", desc: "Spotlight / featured carousel.", params: [] },
+    { cat: "Discovery", method: "GET", path: "/trending", desc: "Currently trending anime.", params: [] },
+    { cat: "Discovery", method: "GET", path: "/trending-sidebar", desc: "Trending sidebar widget data.", params: [] },
+    { cat: "Discovery", method: "GET", path: "/top-ten", desc: "Top 10 ranked anime.", params: [] },
+    { cat: "Discovery", method: "GET", path: "/top-rankings", desc: "Top rankings for a period.", params: [
+      { name: "sort", in: "query", value: "day", placeholder: "day | week | month" }
+    ]},
+    { cat: "Discovery", method: "GET", path: "/random", desc: "One random anime pick.", params: [] },
+    { cat: "Discovery", method: "GET", path: "/most-popular", desc: "Most popular anime, paginated.", params: [
+      { name: "page", in: "query", value: "1" }
+    ]},
+    { cat: "Discovery", method: "GET", path: "/suggestions", desc: "Autocomplete suggestions for a keyword.", params: [
+      { name: "keyword", in: "query", value: "naruto", required: true }
+    ]},
+    { cat: "Discovery", method: "GET", path: "/upcoming", desc: "Upcoming / not-yet-aired anime.", params: [] },
+    { cat: "Discovery", method: "GET", path: "/recently-updated", desc: "Recently updated, filtered by tab.", params: [
+      { name: "tab", in: "query", value: "all", placeholder: "all | sub | dub" }
+    ]},
+    { cat: "Discovery", method: "GET", path: "/completed", desc: "Completed / finished-airing anime.", params: [] },
+    { cat: "Discovery", method: "GET", path: "/az-list/{letter}", desc: "Alphabetical anime listing.", params: [
+      { name: "letter", in: "path", value: "all" },
+      { name: "page", in: "query", value: "1" }
+    ]},
+
+    { cat: "Releases", method: "GET", path: "/new-release", desc: "Recently released episodes.", params: [
+      { name: "page", in: "query", value: "1" }
+    ]},
+    { cat: "Releases", method: "GET", path: "/newly-added", desc: "Newly added anime series.", params: [
+      { name: "page", in: "query", value: "1" }
+    ]},
+    { cat: "Releases", method: "GET", path: "/latest-updated", desc: "Recently updated anime.", params: [
+      { name: "page", in: "query", value: "1" }
+    ]},
+
+    { cat: "Categories", method: "GET", path: "/genre/{genre}", desc: "Anime filtered by genre.", params: [
+      { name: "genre", in: "path", value: "action" },
+      { name: "page", in: "query", value: "1" }
+    ]},
+    { cat: "Categories", method: "GET", path: "/type/{type}", desc: "Anime filtered by type.", params: [
+      { name: "type", in: "path", value: "tv" },
+      { name: "page", in: "query", value: "1" }
+    ]},
+    { cat: "Categories", method: "GET", path: "/status/{status}", desc: "Anime filtered by airing status.", params: [
+      { name: "status", in: "path", value: "currently-airing" },
+      { name: "page", in: "query", value: "1" }
+    ]},
+    { cat: "Categories", method: "GET", path: "/filter", desc: "Advanced multi-field filter.", params: [
+      { name: "genre", in: "query", value: "" },
+      { name: "year", in: "query", value: "" },
+      { name: "season", in: "query", value: "" },
+      { name: "type", in: "query", value: "" },
+      { name: "status", in: "query", value: "" },
+      { name: "page", in: "query", value: "1" }
+    ]},
+
+    { cat: "Search", method: "GET", path: "/search", desc: "Full search results, paginated.", params: [
+      { name: "keyword", in: "query", value: "naruto", required: true },
+      { name: "page", in: "query", value: "1" }
+    ]},
+    { cat: "Search", method: "GET", path: "/search/suggest", desc: "Search box autocomplete suggestions.", params: [
+      { name: "keyword", in: "query", value: "naruto", required: true }
+    ]},
+
+    { cat: "Anime", method: "GET", path: "/info", desc: "Full anime detail metadata.", params: [
+      { name: "id", in: "query", value: "one-piece-odmau", required: true }
+    ]},
+    { cat: "Anime", method: "GET", path: "/episodes/{id}", desc: "Episode list for an anime slug.", params: [
+      { name: "id", in: "path", value: "one-piece-odmau" }
+    ]},
+    { cat: "Anime", method: "GET", path: "/episodes-ajax/{id}", desc: "Raw AJAX-loaded episode list.", params: [
+      { name: "id", in: "path", value: "" },
+      { name: "style", in: "query", value: "" },
+      { name: "vrf", in: "query", value: "" }
+    ]},
+    { cat: "Anime", method: "GET", path: "/seasons/{id}", desc: "Related seasons for an anime.", params: [
+      { name: "id", in: "path", value: "one-piece-odmau" }
+    ]},
+    { cat: "Anime", method: "GET", path: "/watch-order/{id}", desc: "Recommended watch order.", params: [
+      { name: "id", in: "path", value: "one-piece-odmau" }
+    ]},
+
+    { cat: "Streaming", method: "GET", path: "/watch", desc: "Watch page data for a specific episode.", params: [
+      { name: "slug", in: "query", value: "one-piece-odmau" },
+      { name: "ep", in: "query", value: "1" }
+    ]},
+    { cat: "Streaming", method: "GET", path: "/stream", desc: "Stream URL & metadata by server link ID.", params: [
+      { name: "id", in: "query", value: "", placeholder: "from /servers response" }
+    ]},
+    { cat: "Streaming", method: "GET", path: "/servers", desc: "Available servers for episode ID(s).", params: [
+      { name: "ids", in: "query", value: "", placeholder: "comma-separated episode ids" }
+    ]},
+    { cat: "Streaming", method: "GET", path: "/mapper-servers", desc: "Alternative providers via mapper API.", params: [
+      { name: "malId", in: "query", value: "21" },
+      { name: "slug", in: "query", value: "one-piece-odmau" },
+      { name: "timestamp", in: "query", value: "" }
+    ]},
+    { cat: "Streaming", method: "GET", path: "/download", desc: "Download links for an episode.", params: [
+      { name: "slug", in: "query", value: "one-piece-odmau" },
+      { name: "ep", in: "query", value: "1" }
+    ]},
+    { cat: "Streaming", method: "GET", path: "/stream/resolve", desc: "Resolve the actual m3u8/mp4 stream URL.", params: [
+      { name: "id", in: "query", value: "", placeholder: "from /servers response" },
+      { name: "slug", in: "query", value: "one-piece-odmau" }
+    ]},
+    { cat: "Streaming", method: "GET", path: "/stream/qualities", desc: "Quality options for an m3u8 URL.", params: [
+      { name: "url", in: "query", value: "", placeholder: "https://.../master.m3u8" }
+    ]},
+    { cat: "Streaming", method: "GET", path: "/stream/proxy", desc: "Proxies an m3u8 playlist (raw, not JSON).", params: [
+      { name: "url", in: "query", value: "", placeholder: "https://.../master.m3u8" }
+    ]},
+
+    { cat: "Schedule", method: "GET", path: "/schedule", desc: "Airing schedule for a date.", params: [
+      { name: "date", in: "query", value: today }
+    ]}
+  ];
+
+  var els = {
+    baseUrl: document.getElementById("baseUrl"),
+    versionBadge: document.getElementById("versionBadge"),
+    filterBox: document.getElementById("filterBox"),
+    epList: document.getElementById("epList"),
+    reqPanel: document.getElementById("reqPanel"),
+    respPanel: document.getElementById("respPanel"),
+    statusPill: document.getElementById("statusPill"),
+    timePill: document.getElementById("timePill"),
+    typePill: document.getElementById("typePill"),
+    respBody: document.getElementById("respBody")
+  };
+
+  els.baseUrl.value = window.location.origin + "/api";
+
+  fetch(els.baseUrl.value + "/health").then(function (r) { return r.json(); }).then(function (d) {
+    els.versionBadge.textContent = "v" + (d.results && d.results.version || "?");
+  }).catch(function () {
+    els.versionBadge.textContent = "offline";
+  });
+
+  var activeItemEl = null;
+
+  function renderList(filterText) {
+    var q = (filterText || "").toLowerCase();
+    var cats = {};
+    CATALOG.forEach(function (ep) {
+      var hay = (ep.path + " " + ep.desc + " " + ep.cat).toLowerCase();
+      if (q && hay.indexOf(q) === -1) return;
+      (cats[ep.cat] = cats[ep.cat] || []).push(ep);
+    });
+
+    els.epList.innerHTML = "";
+    Object.keys(cats).forEach(function (cat) {
+      var title = document.createElement("div");
+      title.className = "cat-title";
+      title.textContent = cat;
+      els.epList.appendChild(title);
+
+      cats[cat].forEach(function (ep) {
+        var btn = document.createElement("button");
+        btn.className = "ep-item";
+        btn.innerHTML = '<span class="method-tag' + (ep.method === "POST" ? " post" : "") + '">' + ep.method + '</span><span>' + ep.path + '</span>';
+        btn.addEventListener("click", function () {
+          if (activeItemEl) activeItemEl.classList.remove("active");
+          btn.classList.add("active");
+          activeItemEl = btn;
+          renderRequestForm(ep);
+        });
+        els.epList.appendChild(btn);
+      });
+    });
+  }
+
+  function buildUrl(ep, values) {
+    var path = ep.path;
+    var query = [];
+    ep.params.forEach(function (p) {
+      var v = values[p.name] || "";
+      if (p.in === "path") {
+        path = path.replace("{" + p.name + "}", encodeURIComponent(v || p.value || ""));
+      } else if (v !== "") {
+        query.push(encodeURIComponent(p.name) + "=" + encodeURIComponent(v));
+      }
+    });
+    var url = els.baseUrl.value.replace(/\/$/, "") + path;
+    if (query.length) url += "?" + query.join("&");
+    return url;
+  }
+
+  function renderRequestForm(ep) {
+    var html = '<div class="req-header">' +
+      '<span class="method-tag' + (ep.method === "POST" ? " post" : "") + '" style="font-size:.75rem;padding:3px 8px">' + ep.method + '</span>' +
+      '<span class="req-path">' + ep.path + '</span></div>' +
+      '<div class="req-desc">' + ep.desc + '</div>';
+
+    ep.params.forEach(function (p) {
+      html += '<div class="param-row">' +
+        '<div class="param-label">' + p.name + (p.required ? '<span class="required-star">*</span>' : '') + '<span class="in-tag">' + p.in + '</span></div>' +
+        '<input data-param="' + p.name + '" value="' + (p.value || "") + '" placeholder="' + (p.placeholder || "") + '" spellcheck="false" />' +
+        '</div>';
+    });
+
+    html += '<div class="actions"><button class="send" id="sendBtn">Send request</button></div>' +
+      '<div class="full-url" id="fullUrl" style="margin-top:10px"></div>';
+
+    els.reqPanel.innerHTML = html;
+    els.respPanel.style.display = "none";
+
+    var inputs = els.reqPanel.querySelectorAll("input[data-param]");
+    function currentValues() {
+      var v = {};
+      inputs.forEach(function (i) { v[i.getAttribute("data-param")] = i.value; });
+      return v;
+    }
+    function updatePreview() {
+      document.getElementById("fullUrl").textContent = buildUrl(ep, currentValues());
+    }
+    inputs.forEach(function (i) { i.addEventListener("input", updatePreview); });
+    updatePreview();
+
+    document.getElementById("sendBtn").addEventListener("click", function () {
+      sendRequest(ep, currentValues());
+    });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function syntaxHighlight(json) {
+    json = escapeHtml(json);
+    return json.replace(
+      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false)\b|\bnull\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+      function (match) {
+        var cls = "n";
+        if (/^"/.test(match)) cls = /:$/.test(match) ? "k" : "s";
+        else if (/true|false/.test(match)) cls = "b";
+        else if (/null/.test(match)) cls = "nul";
+        return '<span class="' + cls + '">' + match + "</span>";
+      }
+    );
+  }
+
+  function sendRequest(ep, values) {
+    var url = buildUrl(ep, values);
+    var btn = document.getElementById("sendBtn");
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+
+    var started = performance.now();
+    fetch(url, { method: ep.method })
+      .then(function (res) {
+        var elapsed = Math.round(performance.now() - started);
+        var contentType = res.headers.get("content-type") || "";
+        return res.text().then(function (text) {
+          showResponse(res.status, elapsed, contentType, text);
+        });
+      })
+      .catch(function (err) {
+        var elapsed = Math.round(performance.now() - started);
+        showResponse(0, elapsed, "error", err.message || String(err));
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.textContent = "Send request";
+      });
+  }
+
+  function showResponse(status, elapsed, contentType, text) {
+    els.respPanel.style.display = "block";
+    els.statusPill.textContent = status || "network error";
+    els.statusPill.className = "status-pill " + (status >= 200 && status < 400 ? "ok" : "err");
+    els.timePill.textContent = elapsed + " ms";
+    els.typePill.textContent = contentType.split(";")[0] || "—";
+
+    if (contentType.indexOf("json") !== -1) {
+      try {
+        var parsed = JSON.parse(text);
+        els.respBody.innerHTML = syntaxHighlight(JSON.stringify(parsed, null, 2));
+        return;
+      } catch (e) {
+        // fall through to raw text
+      }
+    }
+    if (text.length > 20000) text = text.slice(0, 20000) + "\n\n… (truncated)";
+    els.respBody.textContent = text || "(empty response body)";
+  }
+
+  els.filterBox.addEventListener("input", function () {
+    renderList(els.filterBox.value);
+  });
+
+  renderList("");
+})();
+</script>

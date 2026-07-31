@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: AniKotoAPI
+    env: node
+    buildCommand: npm ci --omit=dev && cd frontend && npm ci && npm run build && npm prune --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        value: https://anikototv.to,https://anikoto.cz,https://anikoto.me,https://anikoto.net,https://anikototv.se

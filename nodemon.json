@@ -1,0 +1,5 @@
+{
+  "ignore": ["frontend/**", "node_modules/**", "public/**"],
+  "watch": ["server.js", "src/**"],
+  "ext": "js,mjs,cjs,json"
+}

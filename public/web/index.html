@@ -1,0 +1,1871 @@
+<title>AniKotoAPI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<style>
+  @font-face {
+    font-family: 'Shippori Mincho';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/web/vendor/fonts/ShipporiMincho-400.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'Shippori Mincho';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/web/vendor/fonts/ShipporiMincho-600.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'Shippori Mincho';
+    font-style: normal;
+    font-weight: 800;
+    font-display: swap;
+    src: url('/web/vendor/fonts/ShipporiMincho-800.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+
+  /* ============================================================
+     DESIGN TOKENS — "Yugen" (幽玄): profound, mysterious beauty.
+     An ink-wash night rather than the generic near-black+neon look.
+     ============================================================ */
+  :root {
+    --canvas: #0c0e13;       /* ink-wash night */
+    --panel: #14171f;        /* card / surface */
+    --panel-raised: #1c2029; /* hover / raised */
+    --hairline: #262b38;     /* dividers */
+    --paper: #f0ede4;        /* moonlit paper — primary text */
+    --mist: #9096a8;         /* muted body text */
+    --mist-soft: #7e8494;    /* faint captions — ~4.8:1 against --panel, was ~2.9:1 (failed WCAG AA) */
+    --moonlight: #d9b872;    /* signature accent — lantern/moonlight gold */
+    --moon-bright: #ecc98c;
+    --twilight: #9c7fc4;     /* secondary accent — dusk violet (dub) */
+    --jade: #6fae8a;         /* sub badge */
+    --err: #d97a63;
+    --font-display: 'Shippori Mincho', Georgia, 'Times New Roman', serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, monospace;
+    --rail-w: 78px;
+  }
+  :root[data-theme="light"] {
+    --canvas: #f2efe6; --panel: #ffffff; --panel-raised: #ece7d9;
+    --hairline: #ddd6c4; --paper: #16181f; --mist: #5f6470; --mist-soft: #646976;
+    --moonlight: #b3843f; --moon-bright: #96692e; --twilight: #7657a0; --jade: #3f7a5a;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --canvas: #f2efe6; --panel: #ffffff; --panel-raised: #ece7d9;
+      --hairline: #ddd6c4; --paper: #16181f; --mist: #5f6470; --mist-soft: #646976;
+      --moonlight: #b3843f; --moon-bright: #96692e; --twilight: #7657a0; --jade: #3f7a5a;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--canvas); }
+  body { font-family: var(--font-body); color: var(--paper); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+  button { font-family: inherit; cursor: pointer; }
+  input, select { font-family: inherit; }
+  ::-webkit-scrollbar { height: 8px; width: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 8px; }
+  :focus-visible { outline: 2px solid var(--moonlight); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  /* ---- Signature texture: manga screentone halftone, used sparingly ---- */
+  .halftone {
+    background-image: radial-gradient(circle, color-mix(in srgb, var(--moonlight) 55%, transparent) 1px, transparent 1.4px);
+    background-size: 7px 7px;
+  }
+
+  /* ============================================================
+     APP SHELL
+     ============================================================ */
+  .shell { display: flex; min-height: 100vh; }
+
+  .rail {
+    width: var(--rail-w); flex-shrink: 0;
+    border-right: 1px solid var(--hairline);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 18px 0; gap: 4px;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .rail-brand { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; color: var(--moonlight); margin-bottom: 20px; }
+  .rail-link {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    width: 100%; padding: 10px 4px; color: var(--mist-soft);
+    font-size: 0.62rem; letter-spacing: 0.03em; border-left: 2px solid transparent;
+  }
+  .rail-link svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  .rail-link:hover { color: var(--paper); background: var(--panel); }
+  .rail-link.active { color: var(--moonlight); border-left-color: var(--moonlight); background: var(--panel); }
+
+  .main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 26px;
+    background: color-mix(in srgb, var(--canvas) 85%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .nav-search { position: relative; flex: 1; max-width: 440px; }
+  .nav-search input {
+    width: 100%; background: var(--panel); border: 1px solid var(--hairline);
+    color: var(--paper); border-radius: 20px; padding: 9px 16px; font-size: 0.88rem; outline: none;
+  }
+  .nav-search input:focus { border-color: var(--moonlight); }
+  .suggest-drop {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: var(--panel); border: 1px solid var(--hairline); border-radius: 10px;
+    overflow: hidden; max-height: 360px; overflow-y: auto; display: none; z-index: 60;
+  }
+  .suggest-drop.open { display: block; }
+  .suggest-item { display: flex; gap: 10px; align-items: center; padding: 8px 12px; }
+  .suggest-item:hover { background: var(--panel-raised); }
+  .suggest-item img { width: 34px; height: 48px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+  .suggest-item .t { font-size: 0.85rem; }
+  .suggest-item .m { font-size: 0.72rem; color: var(--mist-soft); }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-left: auto; }
+  .audio-pref-toggle { display: flex; background: var(--panel); border: 1px solid var(--hairline); border-radius: 20px; padding: 3px; gap: 2px; }
+  .audio-pref-toggle button {
+    border: none; background: none; color: var(--mist-soft); font-size: 0.7rem; font-weight: 700;
+    padding: 5px 13px; border-radius: 16px; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .audio-pref-toggle button.active { background: var(--moonlight); color: #1a1510; }
+  .theme-toggle {
+    background: var(--panel); border: 1px solid var(--hairline); color: var(--mist);
+    border-radius: 8px; padding: 7px 10px; font-size: 0.75rem;
+  }
+  .api-link { font-size: 0.78rem; color: var(--mist-soft); }
+  .api-link:hover { color: var(--moonlight); }
+
+  main.view { min-height: 70vh; flex: 1; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 0 26px; }
+
+  /* ---- Loading / error / empty ---- */
+  .center-msg { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 90px 20px; color: var(--mist); text-align: center; }
+  .spinner { width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid var(--hairline); border-top-color: var(--moonlight); animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-banner {
+    background: color-mix(in srgb, var(--err) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--err) 40%, transparent);
+    color: var(--err); padding: 14px 18px; border-radius: 8px; font-size: 0.88rem;
+  }
+  .empty-state { text-align: center; padding: 70px 20px; color: var(--mist-soft); }
+  .empty-state h3 { font-family: var(--font-display); font-weight: 600; color: var(--mist); font-size: 1.2rem; margin-bottom: 6px; }
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+  .hero { position: relative; height: 60vh; min-height: 380px; overflow: hidden; }
+  .hero-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease; background-size: cover; background-position: center 20%; }
+  .hero-slide.active { opacity: 1; }
+  .hero-slide::after {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle, color-mix(in srgb, var(--moonlight) 65%, transparent) 1px, transparent 1.4px),
+      radial-gradient(ellipse 60% 90% at 15% 60%, color-mix(in srgb, var(--moonlight) 10%, transparent) 0%, transparent 55%),
+      linear-gradient(180deg, rgba(0,0,0,0.1) 0%, var(--canvas) 100%),
+      linear-gradient(90deg, rgba(0,0,0,0.82) 8%, rgba(0,0,0,0.1) 65%);
+    background-size: 7px 7px, auto, auto, auto;
+    background-blend-mode: overlay, normal, normal, normal;
+    opacity: 1;
+    mask-image: linear-gradient(90deg, black 0%, black 45%, transparent 70%);
+  }
+  .hero-info { position: absolute; left: 0; bottom: 9%; max-width: 620px; padding: 0 26px; z-index: 2; }
+  .hero-eyebrow { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--moonlight); margin-bottom: 10px; }
+  .hero-title { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.8rem, 4vw, 3.1rem); line-height: 1.12; margin-bottom: 12px; text-shadow: 0 2px 16px rgba(0,0,0,0.6); }
+  .hero-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .hero-desc { color: var(--mist); font-size: 0.9rem; line-height: 1.65; margin-bottom: 18px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; text-shadow: 0 1px 6px rgba(0,0,0,0.6); }
+  .hero-actions { display: flex; gap: 12px; }
+  .hero-dots { position: absolute; right: 26px; bottom: 9%; display: flex; gap: 6px; z-index: 2; }
+  .hero-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(240,237,228,0.3); cursor: pointer; }
+  .hero-dot.active { background: var(--moonlight); width: 20px; border-radius: 4px; }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; border: none; border-radius: 4px; padding: 11px 22px; font-weight: 600; font-size: 0.85rem; }
+  .btn-primary { background: var(--moonlight); color: #1a1510; }
+  .btn-primary:hover { background: var(--moon-bright); }
+  .btn-ghost { background: rgba(240,237,228,0.1); color: var(--paper); backdrop-filter: blur(6px); border: 1px solid rgba(240,237,228,0.16); }
+  .btn-ghost:hover { background: rgba(240,237,228,0.18); }
+
+  .badge { font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 3px; letter-spacing: 0.02em; }
+  .badge.sub { background: color-mix(in srgb, var(--jade) 20%, transparent); color: var(--jade); }
+  .badge.dub { background: color-mix(in srgb, var(--twilight) 22%, transparent); color: var(--twilight); }
+  .badge.type { background: var(--panel-raised); color: var(--mist); }
+
+  /* Card badges sit directly on poster art of unpredictable brightness/color —
+     the translucent hero-style badge above disappears against dark or busy
+     posters, so give card badges a solid, high-contrast chip instead. */
+  .card-badges .badge { background: rgba(14,13,11,0.88); box-shadow: 0 1px 4px rgba(0,0,0,0.5); font-size: 0.68rem; padding: 3px 8px; }
+  .card-badges .badge.sub { color: #7fe0a8; }
+  .card-badges .badge.dub { color: #c1abf0; }
+
+  /* ============================================================
+     ROWS + CARDS
+     ============================================================ */
+  .row-section { margin: 32px 0; }
+  .row-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; gap: 12px; }
+  .row-head h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; }
+  .row-head .view-all { font-size: 0.78rem; color: var(--mist-soft); }
+  .row-head .view-all:hover { color: var(--moonlight); }
+  .row-scroller { display: flex; gap: 14px; overflow-x: auto; scroll-behavior: smooth; padding-bottom: 6px; }
+
+  .tab-row-wrap { display: flex; align-items: center; gap: 12px; }
+  .page-arrows { display: flex; gap: 4px; }
+  .page-arrows button {
+    width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--panel); border: 1px solid var(--hairline); color: var(--paper); font-size: 0.85rem; line-height: 1;
+  }
+  .page-arrows button:hover:not(:disabled) { border-color: var(--moonlight); color: var(--moonlight); }
+  .page-arrows button:disabled { opacity: 0.35; cursor: default; }
+
+  .card { flex: 0 0 150px; display: block; position: relative; }
+  /* NOTE: width:100% + aspect-ratio (not a fixed height) so a card
+     stretches to fill however wide its actual layout context makes it —
+     a grid column that's wider than 150px (because the grid has room
+     for it), or the fixed 150px flex-basis in a horizontal .row-scroller
+     carousel (5:7 preserves the original 150x210 proportions exactly in
+     that fixed-width case, so nothing changes there). */
+  .card-poster { position: relative; width: 100%; aspect-ratio: 5 / 7; border-radius: 5px; overflow: hidden; background: var(--panel); margin-bottom: 8px; transition: transform 0.18s ease; }
+  .card:hover .card-poster { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(0,0,0,0.5); }
+  .card-poster img { width: 100%; height: 100%; object-fit: cover; }
+  .card-badges { position: absolute; left: 5px; bottom: 5px; display: flex; gap: 4px; }
+  .card-title { font-size: 0.82rem; line-height: 1.32; color: var(--paper); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .card-meta { font-size: 0.7rem; color: var(--mist-soft); margin-top: 2px; }
+  .card-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(0,0,0,0.5); }
+  .card-progress > div { height: 100%; background: var(--moonlight); }
+  .card-remove {
+    position: absolute; top: 6px; right: 6px; z-index: 2; width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(12,14,19,0.75); color: var(--mist); border: 1px solid var(--hairline);
+    display: flex; align-items: center; justify-content: center; font-size: 0.8rem; opacity: 0; transition: opacity 0.15s;
+  }
+  .card:hover .card-remove { opacity: 1; }
+  .card-remove:hover { color: var(--err); border-color: var(--err); }
+
+  .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px 14px; }
+
+  .page-head { display: flex; align-items: baseline; justify-content: space-between; padding: 26px 0 18px; flex-wrap: wrap; gap: 10px; }
+  .page-head h1 { font-family: var(--font-display); font-weight: 600; font-size: 1.7rem; }
+  .page-head .sub { font-size: 0.8rem; color: var(--mist-soft); }
+
+  /* ============================================================
+     DISCOVER / FILTER BAR
+     ============================================================ */
+  .filter-bar {
+    display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 10px; align-items: end;
+    background: var(--panel); border: 1px solid var(--hairline); border-radius: 8px; padding: 16px; margin-bottom: 22px;
+  }
+  .filter-field label { display: block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--mist-soft); margin-bottom: 5px; }
+  .filter-field select, .filter-field input {
+    width: 100%; background: var(--panel-raised); border: 1px solid var(--hairline); color: var(--paper);
+    border-radius: 5px; padding: 8px 9px; font-size: 0.8rem;
+  }
+  .filter-apply { background: var(--moonlight); color: #1a1510; border: none; border-radius: 5px; padding: 9px 18px; font-weight: 700; font-size: 0.8rem; white-space: nowrap; }
+  .filter-apply:hover { background: var(--moon-bright); }
+
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 30px 0; }
+  .pagination button {
+    min-width: 34px; height: 34px; padding: 0 10px; border-radius: 5px; background: var(--panel);
+    border: 1px solid var(--hairline); color: var(--mist); font-size: 0.8rem; font-weight: 600;
+  }
+  .pagination button.current { background: var(--moonlight); color: #1a1510; border-color: var(--moonlight); }
+  .pagination button:disabled { opacity: 0.35; cursor: default; }
+  .pagination button:not(:disabled):not(.current):hover { border-color: var(--moonlight); color: var(--paper); }
+
+  /* ============================================================
+     SCHEDULE
+     ============================================================ */
+  .day-tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 22px; padding-bottom: 4px; }
+  .day-tab {
+    flex-shrink: 0; background: var(--panel); border: 1px solid var(--hairline); color: var(--mist);
+    border-radius: 6px; padding: 10px 16px; font-size: 0.78rem; font-weight: 600; text-align: center; min-width: 80px;
+  }
+  .day-tab .d { font-size: 0.66rem; color: var(--mist-soft); display: block; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .day-tab.active { background: var(--moonlight); color: #1a1510; border-color: var(--moonlight); }
+  .day-tab.active .d { color: #1a1510; opacity: 0.7; }
+  .schedule-list { display: flex; flex-direction: column; gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: 8px; overflow: hidden; }
+  .schedule-row { display: flex; align-items: center; gap: 16px; background: var(--panel); padding: 14px 18px; }
+  .schedule-time { font-family: var(--font-mono); font-size: 0.85rem; color: var(--moonlight); width: 66px; flex-shrink: 0; }
+  .schedule-poster { width: 44px; height: 62px; border-radius: 4px; overflow: hidden; flex-shrink: 0; background: var(--panel-raised); }
+  .schedule-poster img { width: 100%; height: 100%; object-fit: cover; }
+  .schedule-title { font-size: 0.9rem; flex: 1; min-width: 0; }
+  .schedule-ep { font-size: 0.75rem; color: var(--mist-soft); flex-shrink: 0; }
+
+  /* ============================================================
+     HISTORY
+     ============================================================ */
+  .history-toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+  .history-toolbar button { background: var(--panel); border: 1px solid var(--hairline); color: var(--mist); border-radius: 6px; padding: 8px 14px; font-size: 0.78rem; }
+  .history-toolbar button:hover { color: var(--err); border-color: var(--err); }
+  .history-row {
+    display: flex; align-items: center; gap: 16px; background: var(--panel); border: 1px solid var(--hairline);
+    border-radius: 8px; padding: 12px; margin-bottom: 10px;
+  }
+  .history-poster { position: relative; width: 110px; aspect-ratio: 16/9; border-radius: 5px; overflow: hidden; flex-shrink: 0; background: var(--panel-raised); }
+  .history-poster img { width: 100%; height: 100%; object-fit: cover; }
+  .history-info { flex: 1; min-width: 0; }
+  .history-title { font-size: 0.92rem; margin-bottom: 3px; }
+  .history-sub { font-size: 0.76rem; color: var(--mist-soft); }
+  .history-remove { background: none; border: 1px solid var(--hairline); color: var(--mist-soft); border-radius: 6px; padding: 7px 12px; font-size: 0.74rem; flex-shrink: 0; }
+  .history-remove:hover { color: var(--err); border-color: var(--err); }
+
+  /* ============================================================
+     ANIME DETAIL
+     ============================================================ */
+  .detail-hero { position: relative; padding: 40px 0; overflow: hidden; }
+  .detail-backdrop { position: absolute; inset: 0; background-size: cover; background-position: center; filter: blur(3px) saturate(0.85); opacity: 0.28; }
+  .detail-backdrop::after {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle, color-mix(in srgb, var(--moonlight) 55%, transparent) 1px, transparent 1.4px),
+      linear-gradient(180deg, rgba(0,0,0,0.1), var(--canvas) 95%);
+    background-size: 7px 7px, auto;
+    background-blend-mode: overlay, normal;
+  }
+  .detail-content { position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 30px; }
+  .detail-poster { width: 200px; aspect-ratio: 2 / 3; flex-shrink: 0; border-radius: 6px; overflow: hidden; background: var(--panel); box-shadow: 0 14px 34px rgba(0,0,0,0.55); }
+  .detail-poster img { width: 100%; height: 100%; object-fit: cover; }
+  .detail-title { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.6rem, 3vw, 2.3rem); margin-bottom: 4px; }
+  .detail-jp { color: var(--mist-soft); font-size: 0.9rem; margin-bottom: 12px; }
+  .meta-line { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.82rem; color: var(--mist); margin-bottom: 14px; }
+  .meta-line .sep { color: var(--hairline); }
+  .genre-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .genre-tag { font-size: 0.72rem; background: var(--panel); border: 1px solid var(--hairline); padding: 3px 11px; border-radius: 12px; color: var(--mist); }
+  .synopsis { color: var(--mist); font-size: 0.9rem; line-height: 1.68; max-width: 720px; margin-bottom: 16px; }
+  .credit-line { font-size: 0.8rem; color: var(--mist-soft); }
+
+  .ep-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .ep-toolbar select { background: var(--panel); color: var(--paper); border: 1px solid var(--hairline); border-radius: 5px; padding: 6px 10px; font-size: 0.8rem; }
+  .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; max-height: 300px; overflow-y: auto; }
+  .ep-btn { background: var(--panel); border: 1px solid var(--hairline); color: var(--mist); border-radius: 5px; padding: 9px 4px; font-size: 0.8rem; text-align: center; }
+  .ep-btn:hover { border-color: var(--moonlight); color: var(--paper); }
+  .ep-btn.current { background: var(--moonlight); border-color: var(--moonlight); color: #1a1510; font-weight: 700; }
+
+  /* ============================================================
+     HOME — below-hero layout (Latest Episode, Upcoming, mini-lists,
+     inline schedule, Top Anime sidebar, A-Z bar)
+     ============================================================ */
+  .home-layout { display: grid; grid-template-columns: 1fr 320px; gap: 30px; align-items: start; }
+  .home-main { min-width: 0; }
+  .home-sidebar { position: sticky; top: 78px; }
+
+  .panel-box { background: var(--panel); border: 1px solid var(--hairline); border-radius: 8px; padding: 16px; }
+  .panel-box-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .panel-box-head h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+  .tab-row { display: flex; gap: 4px; }
+  .tab-row button {
+    background: none; border: none; color: var(--mist-soft); font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.03em; padding: 4px 8px; border-radius: 4px;
+  }
+  .tab-row button.active { color: #1a1510; background: var(--moonlight); }
+
+  .rank-list { display: flex; flex-direction: column; gap: 4px; }
+  .rank-item { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-radius: 6px; }
+  .rank-item:hover { background: var(--panel-raised); }
+  .rank-num { font-family: var(--font-display); font-size: 1.15rem; color: var(--mist-soft); width: 22px; flex-shrink: 0; text-align: center; }
+  .rank-item:nth-child(-n+3) .rank-num { color: var(--moonlight); }
+  .rank-poster { width: 40px; height: 56px; border-radius: 4px; overflow: hidden; flex-shrink: 0; background: var(--panel-raised); }
+  .rank-poster img { width: 100%; height: 100%; object-fit: cover; }
+  .rank-info { min-width: 0; }
+  .rank-title { font-size: 0.82rem; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .rank-meta { font-size: 0.68rem; color: var(--mist-soft); margin-top: 2px; }
+
+  .az-bar { display: flex; flex-wrap: wrap; gap: 6px; }
+  .az-bar a {
+    display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+    background: var(--panel); border: 1px solid var(--hairline); border-radius: 5px; font-size: 0.78rem; color: var(--mist);
+  }
+  .az-bar a:hover { border-color: var(--moonlight); color: var(--paper); }
+  .az-bar a.active { background: var(--moonlight); border-color: var(--moonlight); color: #1a1510; font-weight: 700; }
+
+  @media (max-width: 960px) {
+    .home-layout { grid-template-columns: 1fr; }
+    .home-sidebar { position: static; }
+  }
+
+  /* ============================================================
+     WATCH / PLAYER
+     ============================================================ */
+  .watch-wrap { padding: 20px 0 60px; }
+  .player-shell { max-width: 1100px; margin: 0 auto; }
+  .player-box { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 6px; overflow: hidden; }
+  .player-box video { width: 100%; height: 100%; }
+  .player-overlay-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; color: #ddd; background: rgba(0,0,0,0.6); font-size: 0.85rem; text-align: center; padding: 20px; z-index: 5; }
+  .skip-btn { position: absolute; right: 18px; bottom: 78px; z-index: 3; background: rgba(12,14,19,0.9); color: #fff; border: 1px solid var(--hairline); padding: 8px 16px; border-radius: 4px; font-size: 0.8rem; display: none; }
+
+  /* ---- Custom player controls (replaces native <video controls>) ---- */
+  .center-play-btn {
+    position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.22); color: #fff; border: none;
+  }
+  .center-play-btn svg { width: 62px; height: 62px; fill: currentColor; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.5)); }
+  .player-controls {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 22px 14px 10px;
+    display: flex; flex-direction: column; gap: 6px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.8) 65%);
+    opacity: 1; transition: opacity 0.25s ease;
+  }
+  .player-box.controls-hidden .player-controls { opacity: 0; pointer-events: none; }
+  .player-box.controls-hidden { cursor: none; }
+  .seek-row { position: relative; height: 14px; display: flex; align-items: center; }
+  .seek-track, .seek-buffered, .seek-played {
+    position: absolute; left: 0; height: 4px; border-radius: 2px; top: 50%; transform: translateY(-50%);
+  }
+  .seek-track { right: 0; background: rgba(255,255,255,0.25); }
+  .seek-buffered { width: 0; background: rgba(255,255,255,0.4); }
+  .seek-played { width: 0; background: var(--moonlight); }
+  .seek-thumb {
+    position: absolute; top: 50%; left: 0; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--moonlight); transform: translate(-50%, -50%); box-shadow: 0 0 0 3px rgba(0,0,0,0.25);
+  }
+  .seek-input {
+    position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer;
+    -webkit-appearance: none; appearance: none; background: transparent;
+  }
+  .control-row { display: flex; align-items: center; gap: 4px; }
+  .control-btn { background: none; border: none; color: #fff; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .control-btn svg { width: 19px; height: 19px; fill: currentColor; }
+  .control-btn:hover { color: var(--moonlight); }
+  .time-display { color: #eee; font-size: 0.74rem; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: 4px; }
+  .volume-row { display: flex; align-items: center; gap: 2px; }
+  .volume-row input[type="range"] { width: 64px; accent-color: var(--moonlight); }
+  .control-spacer { flex: 1; }
+  .watch-title-row { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 10px; flex-wrap: wrap; gap: 8px; }
+  .watch-title-row h1 { font-family: var(--font-display); font-weight: 600; font-size: 1.35rem; }
+  .watch-title-row .ep-nav { display: flex; gap: 8px; }
+  .watch-title-row .ep-nav button { background: var(--panel); border: 1px solid var(--hairline); color: var(--paper); padding: 7px 14px; border-radius: 5px; font-size: 0.8rem; }
+  .watch-title-row .ep-nav button:disabled { opacity: 0.4; cursor: default; }
+
+  .server-panel { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; margin-bottom: 20px; }
+  .server-group { display: flex; flex-direction: column; gap: 6px; }
+  .server-group-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mist-soft); }
+  .server-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .server-pill { background: var(--panel); border: 1px solid var(--hairline); color: var(--mist); padding: 6px 14px; border-radius: 16px; font-size: 0.78rem; }
+  .server-pill.active { background: var(--moonlight); border-color: var(--moonlight); color: #1a1510; font-weight: 600; }
+  .quality-select { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 5px; padding: 5px 8px; font-size: 0.74rem; }
+
+  footer { border-top: 1px solid var(--hairline); padding: 24px; text-align: center; color: var(--mist-soft); font-size: 0.78rem; margin-top: 40px; }
+  footer a { color: var(--moonlight); }
+
+  @media (max-width: 860px) {
+    .rail { position: fixed; bottom: 0; top: auto; left: 0; right: 0; width: 100%; height: auto; flex-direction: row; justify-content: space-around; padding: 8px 4px; z-index: 50; border-right: none; border-top: 1px solid var(--hairline); }
+    .rail-brand { display: none; }
+    .rail-link { border-left: none; border-top: 2px solid transparent; padding: 6px 4px; }
+    .rail-link.active { border-top-color: var(--moonlight); }
+    .main-col { padding-bottom: 60px; }
+    .detail-content { flex-direction: column; align-items: center; text-align: center; }
+    .meta-line, .genre-tags { justify-content: center; }
+    .hero { height: 52vh; }
+    .filter-bar { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* NOTE: no breakpoint previously touched .topbar — at phone widths the
+     search input, sub/dub toggle, theme toggle, and API Tester link were
+     all forced into one non-wrapping row with nowhere to go. Wrap onto a
+     second row instead of letting it overflow. */
+  @media (max-width: 640px) {
+    .topbar { flex-wrap: wrap; padding: 10px 14px; gap: 8px 12px; }
+    .nav-search { order: 1; flex: 1 1 100%; max-width: none; }
+    .topbar-actions { order: 2; flex: 1 1 100%; flex-wrap: wrap; margin-left: 0; }
+  }
+</style>
+
+<div class="shell">
+  <nav class="rail" id="rail">
+    <a class="rail-brand" href="#/" title="幽玄 — yūgen: profound, mysterious beauty">
+      <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="13" fill="var(--moonlight)" />
+        <circle cx="21" cy="12" r="12" fill="var(--canvas)" />
+      </svg>
+    </a>
+    <a class="rail-link" data-route="/" href="#/">
+      <svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5M5 10v10h5v-6h4v6h5V10"/></svg>
+      Home
+    </a>
+    <a class="rail-link" data-route="/discover" href="#/discover">
+      <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M21 7h-4v4"/></svg>
+      Discover
+    </a>
+    <a class="rail-link" data-route="/search" href="#/search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      Search
+    </a>
+    <a class="rail-link" data-route="/recents" href="#/recents">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v-1M16 4v-1"/></svg>
+      Recents
+    </a>
+    <a class="rail-link" data-route="/schedule" href="#/schedule">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      Schedule
+    </a>
+    <a class="rail-link" data-route="/history" href="#/history">
+      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5M12 8v4l3 2"/></svg>
+      History
+    </a>
+  </nav>
+
+  <div class="main-col">
+    <div class="topbar">
+      <div class="nav-search">
+        <input id="searchInput" placeholder="Search anime…" autocomplete="off" spellcheck="false" />
+        <div class="suggest-drop" id="suggestDrop"></div>
+      </div>
+      <div class="topbar-actions">
+        <div class="audio-pref-toggle" id="audioPrefToggle" title="Default audio for new episodes">
+          <button data-pref="sub">Sub</button><button data-pref="dub">Dub</button>
+        </div>
+        <button class="theme-toggle" id="themeToggle" title="Toggle theme">◐</button>
+        <a class="api-link" href="/web/api-tester" target="_blank">API Tester ↗</a>
+      </div>
+    </div>
+
+    <main class="view" id="view"></main>
+
+    <footer>
+      Free anime data via <a href="https://anikototv.to" target="_blank" rel="noopener">anikototv.to</a> ·
+      <a href="/web/api-tester">Endpoint tester</a> ·
+      <a href="/api/openapi" target="_blank">OpenAPI spec</a>
+    </footer>
+  </div>
+</div>
+
+<script src="/web/vendor/hls.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var API = window.location.origin + "/api";
+  var view = document.getElementById("view");
+  var hlsInstance = null;
+
+  // ================= Custom player icons =================
+  var ICON_PLAY = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+  var ICON_PLAY_BIG = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+  var ICON_PAUSE = '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+  var ICON_VOLUME = '<svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2A4.5 4.5 0 0 0 14 7.97v8.05A4.5 4.5 0 0 0 16.5 12z"/></svg>';
+  var ICON_MUTED = '<svg viewBox="0 0 24 24"><path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.42.05-.63zM19 12c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>';
+  var ICON_FULLSCREEN = '<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+
+  // ================= Theme toggle =================
+  var themeToggle = document.getElementById("themeToggle");
+  function applyStoredTheme() {
+    var stored = localStorage.getItem("akt_theme");
+    if (stored) document.documentElement.setAttribute("data-theme", stored);
+  }
+  themeToggle.addEventListener("click", function () {
+    var current = document.documentElement.getAttribute("data-theme") ||
+      (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    var next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("akt_theme", next);
+  });
+  applyStoredTheme();
+
+  // ================= Default audio preference (sub/dub) =================
+  var AUDIO_PREF_KEY = "akt_audio_pref";
+  function getAudioPref() { return localStorage.getItem(AUDIO_PREF_KEY) === "dub" ? "dub" : "sub"; }
+  var audioPrefToggle = document.getElementById("audioPrefToggle");
+  function syncAudioPrefUI() {
+    var pref = getAudioPref();
+    qsa("button", audioPrefToggle).forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-pref") === pref);
+    });
+  }
+  qsa("button", audioPrefToggle).forEach(function (b) {
+    b.addEventListener("click", function () {
+      localStorage.setItem(AUDIO_PREF_KEY, b.getAttribute("data-pref"));
+      syncAudioPrefUI();
+    });
+  });
+  syncAudioPrefUI();
+
+  // ================= Watch history (localStorage) =================
+  var HISTORY_KEY = "akt_watch_history";
+  var MAX_HISTORY = 40;
+
+  function getHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch (e) { return []; }
+  }
+  function saveHistory(list) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  function upsertHistory(entry) {
+    var list = getHistory().filter(function (e) { return e.slug !== entry.slug; });
+    list.unshift(entry);
+    saveHistory(list.slice(0, MAX_HISTORY));
+  }
+  function removeHistory(slug) {
+    saveHistory(getHistory().filter(function (e) { return e.slug !== slug; }));
+  }
+
+  // ================= Helpers =================
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function qs(sel, root) { return (root || document).querySelector(sel); }
+  function qsa(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+  function get(path) {
+    return fetch(API + path).then(function (res) {
+      return res.json().then(function (body) {
+        if (!res.ok || body.success === false) {
+          var err = new Error(body.message || ("Request failed (" + res.status + ")"));
+          err.status = res.status;
+          if (body.retryAfter) err.retryAfter = body.retryAfter;
+          throw err;
+        }
+        return body.results;
+      });
+    });
+  }
+
+  function loadingHTML(label) {
+    return '<div class="center-msg"><div class="spinner"></div><div>' + escapeHtml(label || "Loading…") + "</div></div>";
+  }
+  function errorHTML(message) {
+    return '<div class="container" style="padding-top:40px"><div class="error-banner">' + escapeHtml(message) + "</div></div>";
+  }
+  function emptyHTML(title, desc) {
+    return '<div class="empty-state"><h3>' + escapeHtml(title) + "</h3><p>" + escapeHtml(desc || "") + "</p></div>";
+  }
+
+  // ================= Reference data (genres/types/statuses/seasons) =================
+  var GENRES = ["action","adventure","cars","comedy","dementia","demons","drama","ecchi","fantasy","game","harem","historical","horror","isekai","josei","kids","magic","mahou-shoujo","martial-arts","mecha","military","music","mystery","parody","police","psychological","romance","samurai","school","sci-fi","seinen","shoujo","shoujo-ai","shounen","shounen-ai","slice-of-life","space","sports","super-power","supernatural","thriller","vampire"];
+  var TYPES = ["tv","movie","ova","ona","special","music"];
+  var STATUSES = ["currently-airing","finished-airing","not-yet-aired"];
+  var SEASONS = ["spring","summer","fall","winter"];
+  function titleCase(s) { return s.replace(/-/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
+
+  // ================= Card / row rendering =================
+  function cardHTML(item, opts) {
+    opts = opts || {};
+    var poster = item.poster || "";
+    var title = item.title || "Untitled";
+    var slug = item.slug || "";
+    var sub = item.sub || 0;
+    var dub = item.dub || 0;
+    var type = item.type || item.quality || "";
+    var progress = opts.progress;
+    var removable = opts.removable;
+    return (
+      '<a class="card" href="#/anime/' + encodeURIComponent(slug) + '" data-slug="' + escapeHtml(slug) + '">' +
+      (removable ? '<button class="card-remove" data-remove-slug="' + escapeHtml(slug) + '" title="Remove from history">✕</button>' : "") +
+      '<div class="card-poster"><img loading="lazy" src="' + escapeHtml(poster) + '" alt="' + escapeHtml(title) + '" onerror="this.style.opacity=0" />' +
+      '<div class="card-badges">' +
+      (sub ? '<span class="badge sub">CC ' + sub + "</span>" : "") +
+      (dub ? '<span class="badge dub">DUB ' + dub + "</span>" : "") +
+      "</div>" +
+      (progress != null ? '<div class="card-progress"><div style="width:' + progress + '%"></div></div>' : "") +
+      "</div>" +
+      '<div class="card-title">' + escapeHtml(title) + "</div>" +
+      '<div class="card-meta">' + escapeHtml(type) + "</div>" +
+      "</a>"
+    );
+  }
+
+  function bindCardRemovers(root) {
+    qsa("[data-remove-slug]", root).forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        removeHistory(btn.getAttribute("data-remove-slug"));
+        renderRoute();
+      });
+    });
+  }
+
+  function rowHTML(title, items, viewAllHref) {
+    if (!items || !items.length) return "";
+    return (
+      '<section class="row-section"><div class="container"><div class="row-head"><h2>' + escapeHtml(title) + "</h2>" +
+      (viewAllHref ? '<a class="view-all" href="#' + viewAllHref + '">View all →</a>' : "") +
+      "</div>" +
+      '<div class="row-scroller">' + items.map(function (i) { return cardHTML(i); }).join("") + "</div></div></section>"
+    );
+  }
+
+  // ================= Nav active-state =================
+  function updateRailActive(route) {
+    qsa(".rail-link").forEach(function (link) {
+      link.classList.toggle("active", link.getAttribute("data-route") === route);
+    });
+  }
+
+  // ================= Search =================
+  var searchInput = document.getElementById("searchInput");
+  var suggestDrop = document.getElementById("suggestDrop");
+  var suggestTimer = null;
+
+  searchInput.addEventListener("input", function () {
+    var kw = searchInput.value.trim();
+    clearTimeout(suggestTimer);
+    if (!kw) { suggestDrop.classList.remove("open"); return; }
+    suggestTimer = setTimeout(function () {
+      get("/search/suggest?keyword=" + encodeURIComponent(kw)).then(function (results) {
+        if (!results || !results.length) { suggestDrop.classList.remove("open"); return; }
+        suggestDrop.innerHTML = results.map(function (r) {
+          return '<a class="suggest-item" href="#/anime/' + encodeURIComponent(r.slug) + '">' +
+            '<img src="' + escapeHtml(r.poster || "") + '" alt="' + escapeHtml(r.title || "") + '" onerror="this.style.opacity=0" />' +
+            '<div><div class="t">' + escapeHtml(r.title) + '</div><div class="m">' + escapeHtml(r.type || "") + "</div></div></a>";
+        }).join("");
+        suggestDrop.classList.add("open");
+      }).catch(function () { suggestDrop.classList.remove("open"); });
+    }, 250);
+  });
+  searchInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && searchInput.value.trim()) {
+      suggestDrop.classList.remove("open");
+      window.location.hash = "#/search/" + encodeURIComponent(searchInput.value.trim());
+    }
+  });
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".nav-search")) suggestDrop.classList.remove("open");
+  });
+  // NOTE: suggestion links live INSIDE .nav-search, so the outside-click
+  // listener above never fires for them — without this, picking a result
+  // leaves the dropdown floating open over the page it navigates to.
+  suggestDrop.addEventListener("click", function (e) {
+    if (e.target.closest(".suggest-item")) suggestDrop.classList.remove("open");
+  });
+
+  // ---- Ranked list (Top Anime sidebar) ----
+  function rankListHTML(items) {
+    if (!items || !items.length) return emptyHTML("No rankings yet", "");
+    return '<div class="rank-list">' + items.map(function (it) {
+      return '<a class="rank-item" href="#/anime/' + encodeURIComponent(it.slug) + '">' +
+        '<div class="rank-num">' + it.rank + "</div>" +
+        '<div class="rank-poster"><img loading="lazy" src="' + escapeHtml(it.poster || "") + '" alt="' + escapeHtml(it.title || "") + '" onerror="this.style.opacity=0" /></div>' +
+        '<div class="rank-info"><div class="rank-title">' + escapeHtml(it.title) + "</div>" +
+        '<div class="rank-meta">' + escapeHtml(it.type || "") + (it.sub ? " · CC " + it.sub : "") + (it.dub ? " · DUB " + it.dub : "") + "</div></div>" +
+        "</a>";
+    }).join("") + "</div>";
+  }
+
+  // "All" reads the site's real paginated /latest-updated listing (296
+  // pages of 30 anime each); Sub/Dub/Trending are small fixed homepage-
+  // widget lists (apiTotalPages stays 1, so paging is purely local).
+  //
+  // "items" accumulates EVERY api page fetched so far for the current
+  // tab (never discarded/replaced) — displayPage slices that single
+  // growing array into cols*3-sized chunks. This used to instead REPLACE
+  // "items" with just the newest api page's batch and reset displayPage
+  // to 0 on every api-page boundary; since 30 (the api page size) isn't
+  // a multiple of cols*3 for any grid width, that left a ragged,
+  // partially-empty last row every time a "next" click crossed an api
+  // page boundary — it looked like the grid ran out of content when
+  // really the next api page's items just hadn't been pulled in yet.
+  // Continuous accumulation means a display page is only ever partial
+  // at the true end of all available data, not at every 30-item seam.
+  //
+  // NOTE: requestToken guards against out-of-order responses — nothing
+  // here disabled the prev/next arrows while a fetch was in flight (they
+  // live outside #latestEpisodeGrid, so swapping the grid for a loading
+  // spinner never touched them), so rapid clicks could fire overlapping
+  // fetches whose responses land in a different order than requested.
+  var latestEpisodeState = { tab: "all", displayPage: 0, items: [], apiPage: 0, apiTotalPages: 1, requestToken: 0 };
+
+  // NOTE: previously capped at 4 columns regardless of container width,
+  // trading full-width use for guaranteed full rows — that meant wide
+  // screens left a large stretch of unused space to the right of every
+  // grid instead of actually filling it. Uncapped now: however many
+  // 150px cards genuinely fit the container is how many columns render.
+  // Full rows are still guaranteed (no ragged last row) — that comes
+  // from renderFullRowGrid()'s row-trimming and the Latest Episode
+  // grid's continuous-fill pagination, both of which use whatever this
+  // returns as the real column count, not a fixed assumption.
+  function computeGridCols(container) {
+    var width = container.clientWidth || 0;
+    if (!width) return 1;
+    var gap = 14, minCard = 150;
+    return Math.max(1, Math.floor((width + gap) / (minCard + gap)));
+  }
+
+  // ---- Non-paginated preview grids (e.g. Upcoming Anime) ----
+  // The plain ".grid-cards" class uses grid-template-columns:
+  // repeat(auto-fill, minmax(150px, 1fr)) — the browser decides the
+  // column count from container width on its own, independent of
+  // whatever count computeGridCols() would produce. When the item count
+  // isn't an exact multiple of THAT computed column count, the last row
+  // still reserves the full column count of empty tracks (CSS Grid's
+  // auto-fill doesn't collapse unfilled tracks), which reads as a ragged
+  // strip of dead space. There's no "next page" to pull more items from
+  // here — these are one-shot preview lists — so the fix is to pin the
+  // grid to the SAME column math used everywhere else in this file and
+  // trim the displayed items down to a whole number of rows instead.
+  function renderFullRowGrid(containerId, items) {
+    var el = qs("#" + containerId);
+    if (!el || !items.length) return;
+    var cols = computeGridCols(el);
+    var rows = Math.floor(items.length / cols);
+    var visibleCount = rows > 0 ? rows * cols : items.length;
+    var visibleItems = items.slice(0, visibleCount);
+    // NOTE: explicit column count, capped to however many items actually
+    // exist — when there are FEWER items than one full row (e.g. a short
+    // list), the base auto-fill CSS still reserves the container's full
+    // natural column count as empty tracks next to the few real cards,
+    // since auto-fill sizes tracks from container width, not item count.
+    // Using exactly min(cols, itemCount) columns of 1fr each means a
+    // short row's cards stretch to fill the space instead of leaving
+    // dead tracks beside them, while a full row still gets the same
+    // natural column count as before.
+    var effectiveCols = Math.min(cols, visibleItems.length);
+    el.innerHTML = '<div class="grid-cards" style="grid-template-columns:repeat(' + effectiveCols + ',1fr)">' + visibleItems.map(function (i) { return cardHTML(i); }).join("") + "</div>";
+  }
+
+  function fetchLatestEpisodeBatch(tab, apiPage) {
+    if (tab === "all") {
+      return get("/latest-updated?page=" + apiPage).then(function (r) {
+        return { items: (r && r.data) || [], totalPages: (r && r.totalPages) || 1 };
+      });
+    }
+    // NOTE: Sub/Dub used to come from /recently-updated?tab=X, which
+    // scrapes one small fixed homepage widget and filters it client-side
+    // on the server — that widget only has a handful of items to begin
+    // with, so after filtering for "has dub" there could be as few as 1-2
+    // results, structurally incapable of ever filling a full 6x3 grid no
+    // matter how the frontend renders them. Sourcing from the SAME real
+    // paginated /latest-updated listing "all" uses (296 pages of 30, vs.
+    // one static widget) and filtering client-side here instead means
+    // there's actually enough real data behind these tabs, and the same
+    // continuous-fetch-more-pages logic that fills "all" now naturally
+    // fills "sub"/"dub" too.
+    if (tab === "sub" || tab === "dub") {
+      return get("/latest-updated?page=" + apiPage).then(function (r) {
+        var raw = (r && r.data) || [];
+        var filtered = raw.filter(function (it) { return tab === "sub" ? it.sub > 0 : it.dub > 0; });
+        return { items: filtered, totalPages: (r && r.totalPages) || 1 };
+      });
+    }
+    return get("/trending").then(function (items) { return { items: items || [], totalPages: 1 }; });
+  }
+
+  // Fetches and appends api pages (in order) until either enough items
+  // are loaded to fully fill targetDisplayPage, or there's genuinely
+  // nothing left to fetch. Resolves false if a newer request superseded
+  // this one mid-fetch (caller should bail without touching the UI).
+  function ensureLatestEpisodeItemsLoaded(pageSize, targetDisplayPage, myToken) {
+    var needed = (targetDisplayPage + 1) * pageSize;
+    function step() {
+      if (myToken !== latestEpisodeState.requestToken) return Promise.resolve(false);
+      if (latestEpisodeState.items.length >= needed) return Promise.resolve(true);
+      if (latestEpisodeState.apiPage >= latestEpisodeState.apiTotalPages) return Promise.resolve(true);
+      var nextApiPage = latestEpisodeState.apiPage + 1;
+      return fetchLatestEpisodeBatch(latestEpisodeState.tab, nextApiPage).then(function (result) {
+        if (myToken !== latestEpisodeState.requestToken) return false;
+        latestEpisodeState.apiPage = nextApiPage;
+        latestEpisodeState.apiTotalPages = result.totalPages;
+        latestEpisodeState.items = latestEpisodeState.items.concat(result.items);
+        return step();
+      });
+    }
+    return step();
+  }
+
+  function renderLatestEpisodeGrid() {
+    var el = qs("#latestEpisodeGrid");
+    if (!el) return;
+    var items = latestEpisodeState.items;
+    if (!items.length) { el.innerHTML = emptyHTML("Nothing here", ""); setLatestEpisodeArrowsDisabled(true); return; }
+    var cols = computeGridCols(el);
+    var pageSize = cols * 3;
+    // Clamp in case a resize changed pageSize since the last render —
+    // this only ever moves backward to the nearest page that still has
+    // loaded items, it never triggers a fetch (see the resize handler).
+    var maxLoadedPage = Math.max(0, Math.ceil(items.length / pageSize) - 1);
+    latestEpisodeState.displayPage = Math.min(latestEpisodeState.displayPage, maxLoadedPage);
+    var start = latestEpisodeState.displayPage * pageSize;
+    var pageItems = items.slice(start, start + pageSize);
+    // NOTE: explicit column count, capped to however many items are on
+    // THIS page — small fixed lists (Sub/Dub/Trending tabs often have
+    // far fewer than one full row's worth) would otherwise sit inside
+    // the container's full natural column count via the base auto-fill
+    // CSS, leaving empty tracks beside the few real cards instead of
+    // having them stretch to fill the row.
+    var effectiveCols = Math.min(cols, pageItems.length);
+    el.innerHTML = '<div class="grid-cards" style="grid-template-columns:repeat(' + effectiveCols + ',1fr)">' + pageItems.map(function (i) { return cardHTML(i); }).join("") + "</div>";
+
+    var prevBtn = qs("#latestEpPrev"), nextBtn = qs("#latestEpNext");
+    var hasPrev = latestEpisodeState.displayPage > 0;
+    var hasMoreLoaded = items.length > (latestEpisodeState.displayPage + 1) * pageSize;
+    var hasMoreToFetch = latestEpisodeState.apiPage < latestEpisodeState.apiTotalPages;
+    if (prevBtn) prevBtn.disabled = !hasPrev;
+    if (nextBtn) nextBtn.disabled = !hasMoreLoaded && !hasMoreToFetch;
+  }
+
+  function setLatestEpisodeArrowsDisabled(disabled) {
+    var prevBtn = qs("#latestEpPrev"), nextBtn = qs("#latestEpNext");
+    if (prevBtn) prevBtn.disabled = disabled;
+    if (nextBtn) nextBtn.disabled = disabled;
+  }
+
+  function loadLatestEpisodeTab(tab) {
+    var el = qs("#latestEpisodeGrid");
+    if (!el) return;
+    var myToken = ++latestEpisodeState.requestToken;
+    latestEpisodeState.tab = tab;
+    latestEpisodeState.displayPage = 0;
+    latestEpisodeState.apiPage = 0;
+    latestEpisodeState.items = [];
+    latestEpisodeState.apiTotalPages = 1;
+    var pageSize = computeGridCols(el) * 3;
+    el.innerHTML = loadingHTML("Loading…");
+    setLatestEpisodeArrowsDisabled(true);
+    ensureLatestEpisodeItemsLoaded(pageSize, 0, myToken).then(function (ok) {
+      if (!ok || myToken !== latestEpisodeState.requestToken) return;
+      renderLatestEpisodeGrid();
+    }).catch(function (err) {
+      if (myToken !== latestEpisodeState.requestToken) return;
+      el.innerHTML = errorHTML(err.message);
+      setLatestEpisodeArrowsDisabled(false);
+    });
+  }
+
+  function goLatestEpisodeNext() {
+    var el = qs("#latestEpisodeGrid");
+    if (!el) return;
+    var cols = computeGridCols(el);
+    var pageSize = cols * 3;
+    var targetPage = latestEpisodeState.displayPage + 1;
+    var allDataLoaded = latestEpisodeState.apiPage >= latestEpisodeState.apiTotalPages;
+    // Only fast-path straight to the next page when a FULL page is
+    // already loaded — checking for merely "at least one item exists
+    // past the target page's start" (as this used to) reveals a ragged
+    // partial page immediately instead of fetching the rest first,
+    // since one api page's 30 items is never an exact multiple of any
+    // grid width's page size.
+    var hasFullPageLoaded = latestEpisodeState.items.length >= (targetPage + 1) * pageSize;
+    var hasAnyItemAtTarget = latestEpisodeState.items.length > targetPage * pageSize;
+    if (hasFullPageLoaded || (hasAnyItemAtTarget && allDataLoaded)) {
+      latestEpisodeState.displayPage = targetPage;
+      renderLatestEpisodeGrid();
+      return;
+    }
+    if (allDataLoaded) return; // truly nothing more to fetch and no items at target
+    var myToken = ++latestEpisodeState.requestToken;
+    el.innerHTML = loadingHTML("Loading…");
+    setLatestEpisodeArrowsDisabled(true);
+    ensureLatestEpisodeItemsLoaded(pageSize, targetPage, myToken).then(function (ok) {
+      if (!ok || myToken !== latestEpisodeState.requestToken) return;
+      if (latestEpisodeState.items.length > targetPage * pageSize) {
+        latestEpisodeState.displayPage = targetPage;
+      }
+      renderLatestEpisodeGrid();
+    }).catch(function (err) {
+      if (myToken !== latestEpisodeState.requestToken) return;
+      el.innerHTML = errorHTML(err.message);
+      setLatestEpisodeArrowsDisabled(false);
+    });
+  }
+
+  function goLatestEpisodePrev() {
+    // Every page we've ever shown forward stays in "items" (nothing is
+    // discarded), so going back never needs a fetch — just re-slice.
+    if (latestEpisodeState.displayPage <= 0) return;
+    latestEpisodeState.displayPage--;
+    renderLatestEpisodeGrid();
+  }
+
+  function loadTopRankingsTab(sort) {
+    var el = qs("#topRankingsList");
+    if (!el) return;
+    el.innerHTML = loadingHTML("Loading…");
+    get("/top-rankings?sort=" + sort).then(function (items) {
+      el.innerHTML = rankListHTML(items);
+    }).catch(function (err) { el.innerHTML = errorHTML(err.message); });
+  }
+
+  function loadInlineSchedule(dateStr) {
+    var el = qs("#inlineScheduleList");
+    if (!el) return;
+    el.innerHTML = loadingHTML("Loading…");
+    get("/schedule?date=" + dateStr).then(function (items) {
+      if (!items || !items.length) { el.innerHTML = emptyHTML("Nothing airing", "No scheduled episodes for this date."); return; }
+      el.innerHTML = '<div class="schedule-list">' + items.slice(0, 8).map(function (it) {
+        return '<a class="schedule-row" href="#/anime/' + encodeURIComponent(it.slug || "") + '">' +
+          '<span class="schedule-time">' + escapeHtml(it.time || "--:--") + "</span>" +
+          '<div class="schedule-poster"><img loading="lazy" src="' + escapeHtml(it.poster || "") + '" alt="' + escapeHtml(it.title || "") + '" onerror="this.style.opacity=0" /></div>' +
+          '<span class="schedule-title">' + escapeHtml(it.title || "Untitled") + "</span>" +
+          '<span class="schedule-ep">Ep ' + escapeHtml(it.episode_no || "?") + "</span>" +
+          "</a>";
+      }).join("") + "</div>";
+    }).catch(function (err) { el.innerHTML = errorHTML(err.message); });
+  }
+
+  // ================= Views =================
+  function renderHome() {
+    view.innerHTML = loadingHTML("Loading AniKotoAPI…");
+
+    var today = new Date();
+    var todayIso = today.toISOString().slice(0, 10);
+    var scheduleDays = [];
+    for (var d = 0; d < 5; d++) {
+      var dt = new Date(today);
+      dt.setDate(today.getDate() + d);
+      scheduleDays.push(dt);
+    }
+
+    Promise.all([
+      get("/spotlight").catch(function () { return []; }),
+      get("/latest-updated?page=1").catch(function () { return { data: [], totalPages: 1 }; }),
+      get("/upcoming").catch(function () { return []; }),
+      get("/top-rankings?sort=day").catch(function () { return []; })
+    ]).then(function (r) {
+      var spotlight = r[0] || [];
+      var latestEpisode = (r[1] && r[1].data) || [];
+      var latestEpisodeTotalPages = (r[1] && r[1].totalPages) || 1;
+      var upcoming = r[2] || [];
+      var topRankings = r[3] || [];
+      var history = getHistory();
+
+      var heroHTML = "";
+      if (spotlight.length) {
+        heroHTML = '<div class="hero">' +
+          spotlight.slice(0, 6).map(function (s, i) {
+            return '<div class="hero-slide' + (i === 0 ? " active" : "") + '" data-i="' + i + '" style="background-image:url(\'' + escapeHtml(s.poster || "") + "')\">" +
+              '<div class="hero-info"><div class="hero-eyebrow">Spotlight</div>' +
+              '<div class="hero-meta">' +
+              (s.rating ? '<span class="badge type">' + escapeHtml(s.rating) + "</span>" : "") +
+              (s.quality ? '<span class="badge type">' + escapeHtml(s.quality) + "</span>" : "") +
+              (s.sub ? '<span class="badge sub">CC ' + s.sub + "</span>" : "") +
+              (s.dub ? '<span class="badge dub">DUB ' + s.dub + "</span>" : "") +
+              "</div>" +
+              '<h1 class="hero-title">' + escapeHtml(s.title) + "</h1>" +
+              '<div class="hero-desc">' + escapeHtml(s.description || "") + "</div>" +
+              '<div class="hero-actions">' +
+              '<a class="btn btn-primary" href="#/watch/' + encodeURIComponent(s.slug) + '/1">▶ Watch Now</a>' +
+              '<a class="btn btn-ghost" href="#/anime/' + encodeURIComponent(s.slug) + '">More Info</a>' +
+              "</div></div></div>";
+          }).join("") +
+          '<div class="hero-dots">' + spotlight.slice(0, 6).map(function (s, i) {
+            return '<div class="hero-dot' + (i === 0 ? " active" : "") + '" data-i="' + i + '"></div>';
+          }).join("") + "</div></div>";
+      }
+
+      var continueItems = history.slice(0, 12).map(function (h) {
+        return { slug: h.slug, poster: h.poster, title: h.title, sub: 0, dub: 0, type: "Ep " + h.episodeNumber };
+      });
+
+      var scheduleTabsHTML = scheduleDays.map(function (d, i) {
+        var iso = d.toISOString().slice(0, 10);
+        return '<button class="day-tab' + (i === 0 ? " active" : "") + '" data-date="' + iso + '">' +
+          '<span class="d">' + (i === 0 ? "Today" : d.toLocaleDateString(undefined, { weekday: "short" })) + "</span>" + d.getDate() + "</button>";
+      }).join("");
+
+      var azLetters = ["all", "0-9"].concat("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""));
+      var azBarHTML = azLetters.map(function (l) {
+        return '<a href="#/az/' + encodeURIComponent(l) + '/1">' + (l === "all" ? "All" : l) + "</a>";
+      }).join("");
+
+      view.innerHTML = heroHTML +
+        '<div style="padding-top:8px">' +
+        (continueItems.length ? '<section class="row-section"><div class="container"><div class="row-head"><h2>Continue Watching</h2><a class="view-all" href="#/history">View all →</a></div><div class="row-scroller">' +
+          continueItems.map(function (i) { return cardHTML(i, { progress: history.find(function (h) { return h.slug === i.slug; }).progressPercent }); }).join("") +
+          "</div></div></section>" : "") +
+        '<div class="container"><div class="home-layout">' +
+        '<div class="home-main">' +
+
+        '<div class="row-head"><h2>Latest Episode</h2><div class="tab-row-wrap"><div class="tab-row" id="latestEpisodeTabs">' +
+        '<button class="active" data-tab="all">All</button><button data-tab="sub">Sub</button><button data-tab="dub">Dub</button><button data-tab="trending">Trending</button>' +
+        '</div><div class="page-arrows"><button id="latestEpPrev" aria-label="Previous page">‹</button><button id="latestEpNext" aria-label="Next page">›</button></div></div></div>' +
+        '<div id="latestEpisodeGrid">' + (latestEpisode.length ? "" : emptyHTML("Nothing here", "")) + "</div>" +
+
+        (upcoming.length ? '<div class="row-section"><div class="row-head"><h2>Upcoming Anime</h2></div>' +
+          '<div id="upcomingGrid"></div></div>' : "") +
+
+        '<div class="panel-box"><div class="panel-box-head"><h2>Estimated Schedule</h2></div>' +
+        '<div class="day-tabs" id="inlineScheduleTabs">' + scheduleTabsHTML + "</div>" +
+        '<div id="inlineScheduleList">' + loadingHTML("Loading…") + "</div>" +
+        '<div style="text-align:right;margin-top:10px"><a class="view-all" href="#/schedule">Full schedule →</a></div>' +
+        "</div>" +
+
+        "</div>" + // /home-main
+
+        '<div class="home-sidebar"><div class="panel-box"><div class="panel-box-head"><h2>Top Anime</h2><div class="tab-row" id="topRankingsTabs">' +
+        '<button class="active" data-sort="day">Day</button><button data-sort="week">Week</button><button data-sort="month">Month</button>' +
+        "</div></div>" +
+        '<div id="topRankingsList">' + rankListHTML(topRankings) + "</div>" +
+        "</div></div>" +
+
+        "</div></div>" + // /home-layout /container
+
+        '<div class="container" style="padding:20px 0 40px"><div class="row-head"><h2>A-Z List</h2></div><div class="az-bar">' + azBarHTML + "</div></div>" +
+
+        "</div>";
+
+      if (spotlight.length > 1) {
+        var idx = 0;
+        var slides = qsa(".hero-slide");
+        var dots = qsa(".hero-dot");
+        function showSlide(n) {
+          slides.forEach(function (el, i) { el.classList.toggle("active", i === n); });
+          dots.forEach(function (el, i) { el.classList.toggle("active", i === n); });
+          idx = n;
+        }
+        dots.forEach(function (d) { d.addEventListener("click", function () { showSlide(parseInt(d.getAttribute("data-i"))); }); });
+        var heroTimer = setInterval(function () { showSlide((idx + 1) % slides.length); }, 6000);
+        view.addEventListener("view-unload", function () { clearInterval(heroTimer); }, { once: true });
+      }
+
+      qsa("#latestEpisodeTabs button").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          qsa("#latestEpisodeTabs button").forEach(function (b) { b.classList.remove("active"); });
+          btn.classList.add("active");
+          loadLatestEpisodeTab(btn.getAttribute("data-tab"));
+        });
+      });
+      latestEpisodeState.tab = "all";
+      latestEpisodeState.items = latestEpisode;
+      latestEpisodeState.displayPage = 0;
+      latestEpisodeState.apiPage = 1;
+      latestEpisodeState.apiTotalPages = latestEpisodeTotalPages;
+      renderLatestEpisodeGrid();
+      qs("#latestEpPrev").addEventListener("click", goLatestEpisodePrev);
+      qs("#latestEpNext").addEventListener("click", goLatestEpisodeNext);
+      if (upcoming.length) renderFullRowGrid("upcomingGrid", upcoming);
+      var latestEpResizeTimer = null;
+      var onLatestEpResize = function () {
+        clearTimeout(latestEpResizeTimer);
+        latestEpResizeTimer = setTimeout(function () {
+          renderLatestEpisodeGrid();
+          if (upcoming.length) renderFullRowGrid("upcomingGrid", upcoming);
+        }, 150);
+      };
+      window.addEventListener("resize", onLatestEpResize);
+      view.addEventListener("view-unload", function () { window.removeEventListener("resize", onLatestEpResize); }, { once: true });
+      qsa("#topRankingsTabs button").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          qsa("#topRankingsTabs button").forEach(function (b) { b.classList.remove("active"); });
+          btn.classList.add("active");
+          loadTopRankingsTab(btn.getAttribute("data-sort"));
+        });
+      });
+      qsa("#inlineScheduleTabs button").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          qsa("#inlineScheduleTabs button").forEach(function (b) { b.classList.remove("active"); });
+          btn.classList.add("active");
+          loadInlineSchedule(btn.getAttribute("data-date"));
+        });
+      });
+      loadInlineSchedule(todayIso);
+    }).catch(function (err) {
+      view.innerHTML = errorHTML("Couldn't load the homepage: " + err.message);
+    });
+  }
+
+  function renderAzList(letter, page) {
+    letter = letter || "all";
+    page = parseInt(page) || 1;
+    view.innerHTML = loadingHTML("Loading A-Z list…");
+    get("/az-list/" + encodeURIComponent(letter) + "?page=" + page).then(function (r) {
+      var items = r.data || [];
+      var totalPages = r.totalPages || (r.pagination && r.pagination.totalPages) || 1;
+      view.innerHTML = '<div class="container">' +
+        '<div class="page-head"><h1>A-Z List</h1><span class="sub">' + (letter === "all" ? "All titles" : "Starting with " + letter.toUpperCase()) + "</span></div>" +
+        (items.length ? '<div class="grid-cards">' + items.map(function (i) { return cardHTML(i); }).join("") + "</div>" : emptyHTML("Nothing here", "Try a different letter.")) +
+        paginationHTML(page, totalPages, function (p) { return "/az/" + encodeURIComponent(letter) + "/" + p; }) +
+        "</div>";
+    }).catch(function (err) {
+      view.innerHTML = errorHTML("Couldn't load A-Z list: " + err.message);
+    });
+  }
+
+  function renderDiscover() {
+    view.innerHTML = loadingHTML("Loading discover feed…");
+    Promise.all([
+      get("/trending").catch(function () { return []; }),
+      get("/new-release").catch(function () { return { data: [] }; }),
+      get("/most-popular").catch(function () { return { data: [] }; }),
+      get("/recently-updated").catch(function () { return []; })
+    ]).then(function (r) {
+      var trending = r[0] || [];
+      var newRelease = (r[1] && r[1].data) || [];
+      var popular = (r[2] && r[2].data) || [];
+      var recent = r[3] || [];
+      view.innerHTML = '<div class="container">' +
+        '<div class="page-head"><h1>Discover</h1><span class="sub">Trending, popular, and freshly updated</span></div>' +
+        "</div>" +
+        rowHTML("Trending Now", trending) +
+        rowHTML("New Releases", newRelease, "/recents") +
+        rowHTML("Most Popular", popular, "/search") +
+        rowHTML("Recently Updated", recent, "/recents");
+      if (!trending.length && !newRelease.length && !popular.length && !recent.length) {
+        qs(".container").insertAdjacentHTML("afterend", emptyHTML("Nothing to discover right now", "Check back soon."));
+      }
+    }).catch(function (err) { view.innerHTML = errorHTML("Couldn't load discover feed: " + err.message); });
+  }
+
+  function renderRecents(page) {
+    page = parseInt(page) || 1;
+    view.innerHTML = loadingHTML("Loading recently updated…");
+    get("/latest-updated?page=" + page).then(function (r) {
+      var items = r.data || [];
+      var totalPages = r.totalPages || (r.pagination && r.pagination.totalPages) || 1;
+      view.innerHTML = '<div class="container">' +
+        '<div class="page-head"><h1>Recently Updated</h1><span class="sub">Page ' + page + " of " + totalPages + "</span></div>" +
+        (items.length ? '<div class="grid-cards">' + items.map(function (i) { return cardHTML(i); }).join("") : emptyHTML("Nothing here", "Try a different page.")) +
+        (items.length ? "</div>" : "") +
+        paginationHTML(page, totalPages, function (p) { return "/recents/" + p; }) +
+        "</div>";
+    }).catch(function (err) { view.innerHTML = errorHTML("Couldn't load recents: " + err.message); });
+  }
+
+  function paginationHTML(page, totalPages, hrefFn) {
+    if (totalPages <= 1) return "";
+    var maxBtns = 5;
+    var start = Math.max(1, page - Math.floor(maxBtns / 2));
+    var end = Math.min(totalPages, start + maxBtns - 1);
+    start = Math.max(1, end - maxBtns + 1);
+    var html = '<div class="pagination">';
+    html += '<a href="#' + hrefFn(Math.max(1, page - 1)) + '"><button aria-label="Previous page"' + (page <= 1 ? " disabled" : "") + '>‹</button></a>';
+    for (var p = start; p <= end; p++) {
+      html += '<a href="#' + hrefFn(p) + '"><button class="' + (p === page ? "current" : "") + '" aria-label="Page ' + p + '"' + (p === page ? ' aria-current="page"' : "") + '>' + p + "</button></a>";
+    }
+    html += '<a href="#' + hrefFn(Math.min(totalPages, page + 1)) + '"><button aria-label="Next page"' + (page >= totalPages ? " disabled" : "") + '>›</button></a>';
+    html += "</div>";
+    return html;
+  }
+
+  function renderSchedule(dateStr) {
+    var today = new Date();
+    var days = [];
+    for (var i = -2; i <= 4; i++) {
+      var d = new Date(today);
+      d.setDate(today.getDate() + i);
+      days.push(d);
+    }
+    var selected = dateStr || today.toISOString().slice(0, 10);
+
+    var tabsHTML = days.map(function (d) {
+      var iso = d.toISOString().slice(0, 10);
+      var isToday = iso === today.toISOString().slice(0, 10);
+      return '<a href="#/schedule/' + iso + '"><button class="day-tab' + (iso === selected ? " active" : "") + '">' +
+        '<span class="d">' + (isToday ? "Today" : d.toLocaleDateString(undefined, { weekday: "short" })) + "</span>" +
+        d.getDate() + "</button></a>";
+    }).join("");
+
+    view.innerHTML = '<div class="container">' +
+      '<div class="page-head"><h1>Airing Schedule</h1><span class="sub">' + selected + "</span></div>" +
+      '<div class="day-tabs">' + tabsHTML + "</div>" +
+      '<div id="scheduleList">' + loadingHTML("Loading schedule…") + "</div>" +
+      "</div>";
+
+    get("/schedule?date=" + selected).then(function (items) {
+      var el = qs("#scheduleList");
+      if (!items || !items.length) { el.innerHTML = emptyHTML("Nothing airing", "No scheduled episodes for this date."); return; }
+      el.innerHTML = '<div class="schedule-list">' + items.map(function (it) {
+        return '<a class="schedule-row" href="#/anime/' + encodeURIComponent(it.slug || "") + '">' +
+          '<span class="schedule-time">' + escapeHtml(it.time || "--:--") + "</span>" +
+          '<div class="schedule-poster"><img loading="lazy" src="' + escapeHtml(it.poster || "") + '" alt="' + escapeHtml(it.title || "") + '" onerror="this.style.opacity=0" /></div>' +
+          '<span class="schedule-title">' + escapeHtml(it.title || "Untitled") + "</span>" +
+          '<span class="schedule-ep">Ep ' + escapeHtml(it.episode_no || "?") + "</span>" +
+          "</a>";
+      }).join("") + "</div>";
+    }).catch(function (err) {
+      qs("#scheduleList").innerHTML = errorHTML("Couldn't load schedule: " + err.message);
+    });
+  }
+
+  function renderHistoryPage() {
+    var history = getHistory();
+    view.innerHTML = '<div class="container">' +
+      '<div class="page-head"><h1>Watch History</h1><span class="sub">' + history.length + " saved</span></div>" +
+      (history.length ? '<div class="history-toolbar"><button id="clearHistoryBtn">Clear all</button></div>' : "") +
+      (history.length ? '<div id="historyList"></div>' : emptyHTML("No watch history yet", "Episodes you watch will show up here.")) +
+      "</div>";
+
+    if (!history.length) return;
+
+    qs("#historyList").innerHTML = history.map(function (h) {
+      return '<div class="history-row">' +
+        '<a class="history-poster" href="#/watch/' + encodeURIComponent(h.slug) + "/" + h.episodeNumber + '"><img loading="lazy" src="' + escapeHtml(h.poster || "") + '" alt="' + escapeHtml(h.title || "") + '" onerror="this.style.opacity=0" /></a>' +
+        '<div class="history-info"><div class="history-title">' + escapeHtml(h.title) + " — Episode " + h.episodeNumber + "</div>" +
+        '<div class="history-sub">' + (h.progressPercent || 0) + "% watched · " + new Date(h.watchedAt).toLocaleString() + "</div></div>" +
+        '<button class="history-remove" data-slug="' + escapeHtml(h.slug) + '">Remove</button>' +
+        "</div>";
+    }).join("");
+
+    qs("#clearHistoryBtn").addEventListener("click", function () {
+      saveHistory([]);
+      renderHistoryPage();
+    });
+    qsa("[data-slug]", qs("#historyList")).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        removeHistory(btn.getAttribute("data-slug"));
+        renderHistoryPage();
+      });
+    });
+  }
+
+  function renderSearch(keyword, params) {
+    if (keyword) {
+      view.innerHTML = loadingHTML('Searching "' + keyword + '"…');
+      get("/search?keyword=" + encodeURIComponent(keyword) + "&page=1").then(function (r) {
+        var items = (r && r.data) || [];
+        view.innerHTML = '<div class="container" style="padding-top:24px">' +
+          '<div class="page-head"><h1>Results for &ldquo;' + escapeHtml(keyword) + '&rdquo;</h1><a class="view-all" href="#/search">Browse by filter instead →</a></div>' +
+          (items.length ? '<div class="grid-cards">' + items.map(function (i) { return cardHTML(i); }).join("") + "</div>" : emptyHTML("No results found", "Try a different keyword.")) +
+          "</div>";
+      }).catch(function (err) {
+        view.innerHTML = errorHTML("Search failed: " + err.message);
+      });
+      return;
+    }
+
+    // ---- Filter/browse mode (no keyword) ----
+    params = params || {};
+    var page = parseInt(params.page) || 1;
+
+    function fieldOptions(list, current) {
+      return '<option value="">Any</option>' + list.map(function (v) {
+        return '<option value="' + v + '"' + (v === current ? " selected" : "") + ">" + titleCase(v) + "</option>";
+      }).join("");
+    }
+
+    view.innerHTML =
+      '<div class="container">' +
+      '<div class="page-head"><h1>Search</h1><span class="sub">Filter the full catalog</span></div>' +
+      '<form class="filter-bar" id="discoverForm">' +
+      '<div class="filter-field"><label>Genre</label><select name="genre">' + fieldOptions(GENRES, params.genre) + "</select></div>" +
+      '<div class="filter-field"><label>Type</label><select name="type">' + fieldOptions(TYPES, params.type) + "</select></div>" +
+      '<div class="filter-field"><label>Status</label><select name="status">' + fieldOptions(STATUSES, params.status) + "</select></div>" +
+      '<div class="filter-field"><label>Season</label><select name="season">' + fieldOptions(SEASONS, params.season) + "</select></div>" +
+      '<div class="filter-field"><label>Year</label><input type="number" name="year" placeholder="e.g. 2024" value="' + escapeHtml(params.year || "") + '" /></div>' +
+      '<button type="submit" class="filter-apply">Apply</button>' +
+      "</form>" +
+      '<div id="discoverResults">' + loadingHTML("Loading catalog…") + "</div>" +
+      "</div>";
+
+    var form = qs("#discoverForm");
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var fd = new FormData(form);
+      var q = {};
+      ["genre", "type", "status", "season", "year"].forEach(function (k) {
+        var v = fd.get(k);
+        if (v) q[k] = v;
+      });
+      window.location.hash = "#/search?" + new URLSearchParams(q).toString();
+    });
+
+    var query = Object.assign({}, params);
+    delete query.page;
+    var qsStr = new URLSearchParams(Object.assign({}, query, { page: page })).toString();
+
+    get("/filter?" + qsStr).then(function (r) {
+      var items = r.data || [];
+      var totalPages = r.totalPages || (r.pagination && r.pagination.totalPages) || 1;
+      var resultsEl = qs("#discoverResults");
+      resultsEl.innerHTML =
+        (items.length ? '<div class="grid-cards">' + items.map(function (i) { return cardHTML(i); }).join("") + "</div>" : emptyHTML("No matches", "Try loosening your filters.")) +
+        paginationHTML(page, totalPages, function (p) {
+          var pq = new URLSearchParams(Object.assign({}, query, { page: p })).toString();
+          return "/search?" + pq;
+        });
+    }).catch(function (err) {
+      qs("#discoverResults").innerHTML = errorHTML("Couldn't load results: " + err.message);
+    });
+  }
+
+  function relatedSectionHTML(id) {
+    return '<div class="row-section container" id="' + id + '"></div>';
+  }
+
+  function loadRelated(containerId, genres, excludeSlug, title, pick) {
+    var el = qs("#" + containerId);
+    if (!el || !genres || !genres.length) return;
+    var genreSlug = genres[Math.min(pick, genres.length - 1)].toLowerCase().replace(/\s+/g, "-");
+    get("/genre/" + encodeURIComponent(genreSlug) + "?page=1").then(function (r) {
+      var items = (r.data || []).filter(function (i) { return i.slug !== excludeSlug; }).slice(0, 12);
+      if (!items.length) return;
+      el.innerHTML = '<div class="row-head"><h2>' + escapeHtml(title) + "</h2></div><div class=\"row-scroller\">" +
+        items.map(function (i) { return cardHTML(i); }).join("") + "</div>";
+    }).catch(function () {});
+  }
+
+  function renderAnime(slug) {
+    view.innerHTML = loadingHTML("Loading anime info…");
+    Promise.all([
+      get("/info?id=" + encodeURIComponent(slug)),
+      get("/episodes/" + encodeURIComponent(slug)).catch(function () { return { episodes: [] }; }),
+      get("/watch?slug=" + encodeURIComponent(slug) + "&ep=1").catch(function () { return null; })
+    ]).then(function (r) {
+      var info = r[0];
+      var epData = r[1] || {};
+      var episodes = epData.episodes || [];
+      var firstEpServers = (r[2] && r[2].servers) || [];
+      var hasSub = firstEpServers.some(function (s) { return s.type === "sub"; });
+      var hasDub = firstEpServers.some(function (s) { return s.type === "dub"; });
+      var isMovie = /movie/i.test(info.type || "") && episodes.length <= 1;
+
+      var genreTags = (info.genres || []).map(function (g) { return '<span class="genre-tag">' + escapeHtml(g) + "</span>"; }).join("");
+      var availabilityBadges = (hasSub ? '<span class="badge sub">SUB AVAILABLE</span>' : "") + (hasDub ? '<span class="badge dub">DUB AVAILABLE</span>' : "");
+      var metaBits = [info.type, info.status, info.duration, info.episodes ? info.episodes + " episodes" : "", info.malScore ? "★ " + info.malScore : ""]
+        .filter(Boolean).map(escapeHtml).join('<span class="sep">•</span>');
+      var epButtons = episodes.map(function (ep) {
+        return '<a class="ep-btn" href="#/watch/' + encodeURIComponent(slug) + "/" + encodeURIComponent(ep.episode_no) + '">' + ep.episode_no + "</a>";
+      }).join("");
+
+      view.innerHTML =
+        '<div class="detail-hero">' +
+        '<div class="detail-backdrop" style="background-image:url(\'' + escapeHtml(info.backgroundImage || info.poster || "") + "')\"></div>" +
+        '<div class="container detail-content">' +
+        '<div class="detail-poster"><img src="' + escapeHtml(info.poster || "") + '" alt="' + escapeHtml(info.title || "") + '" onerror="this.style.opacity=0" /></div>' +
+        "<div>" +
+        '<h1 class="detail-title">' + escapeHtml(info.title) + "</h1>" +
+        (info.japaneseTitle ? '<div class="detail-jp">' + escapeHtml(info.japaneseTitle) + "</div>" : "") +
+        (availabilityBadges ? '<div class="hero-meta" style="margin-bottom:10px">' + availabilityBadges + "</div>" : "") +
+        '<div class="meta-line">' + metaBits + "</div>" +
+        '<div class="genre-tags">' + genreTags + "</div>" +
+        '<p class="synopsis">' + escapeHtml(info.synopsis || "No synopsis available.") + "</p>" +
+        (info.studios && info.studios.length ? '<div class="credit-line">Studio: ' + escapeHtml(info.studios.join(", ")) + "</div>" : "") +
+        '<div style="margin-top:18px"><a class="btn btn-primary" href="#/watch/' + encodeURIComponent(slug) + '/1">▶ Watch ' + (isMovie ? "Movie" : "Episode 1") + '</a></div>' +
+        "</div></div></div>" +
+        (isMovie ? "" :
+          '<div class="container" style="padding-top:10px;padding-bottom:10px">' +
+          '<div class="row-head"><h2>Episodes' + (episodes.length ? " (" + episodes.length + ")" : "") + "</h2></div>" +
+          (episodes.length ? '<div class="ep-grid">' + epButtons + "</div>" : emptyHTML("No episode data", "This title may not be available yet.")) +
+          "</div>") +
+        relatedSectionHTML("relatedA") +
+        relatedSectionHTML("relatedB");
+
+      loadRelated("relatedA", info.genres, slug, "Related Anime", 0);
+      loadRelated("relatedB", info.genres, slug, "You Might Also Like", 1);
+    }).catch(function (err) {
+      view.innerHTML = errorHTML("Couldn't load this anime: " + err.message);
+    });
+  }
+
+  // ---- Watch / player ----
+  function destroyPlayer() {
+    if (hlsInstance) { try { hlsInstance.destroy(); } catch (e) {} hlsInstance = null; }
+  }
+
+  function attachSource(videoEl, url, type, refOrigin) {
+    destroyPlayer();
+    if (type === "hls") {
+      var proxied = API + "/stream/proxy?url=" + encodeURIComponent(url) + (refOrigin ? "&ref=" + encodeURIComponent(refOrigin) : "");
+      if (window.Hls && window.Hls.isSupported()) {
+        hlsInstance = new Hls();
+        hlsInstance.loadSource(proxied);
+        hlsInstance.attachMedia(videoEl);
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function () {
+          var qualitySelect = qs("#qualitySelect");
+          if (qualitySelect && hlsInstance.levels && hlsInstance.levels.length > 1) {
+            qualitySelect.style.display = "";
+            qualitySelect.innerHTML = '<option value="-1">Auto</option>' +
+              hlsInstance.levels.map(function (lvl, i) {
+                return '<option value="' + i + '">' + (lvl.height ? lvl.height + "p" : "Level " + i) + "</option>";
+              }).join("");
+            qualitySelect.onchange = function () { hlsInstance.currentLevel = parseInt(qualitySelect.value); };
+          }
+        });
+        hlsInstance.on(Hls.Events.ERROR, function (evt, data) {
+          if (!data.fatal) return;
+          var permanent = data.response && (data.response.code === 403 || data.response.code === 404);
+          if (permanent) { showPlayerMessage("This server's stream is unavailable — try another server."); return; }
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) { hlsInstance.startLoad(); }
+          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) { hlsInstance.recoverMediaError(); }
+          else { showPlayerMessage("Playback error on this server — try another server."); }
+        });
+      } else if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
+        videoEl.src = proxied;
+      } else {
+        showPlayerMessage("Your browser can't play this stream format.");
+        return;
+      }
+    } else {
+      videoEl.src = url;
+    }
+    videoEl.play().catch(function () {});
+  }
+
+  function showPlayerMessage(msg) {
+    var box = qs("#playerBox");
+    if (!box) return;
+    var existing = qs(".player-overlay-msg", box);
+    if (existing) existing.remove();
+    var div = document.createElement("div");
+    div.className = "player-overlay-msg";
+    div.textContent = msg;
+    box.appendChild(div);
+  }
+  function clearPlayerMessage() {
+    var el = qs(".player-overlay-msg");
+    if (el) el.remove();
+  }
+
+  // ---- Custom player controls (built once per watch-page render; the
+  // underlying <video> element persists across server-pill switches, so
+  // this doesn't need to re-run when the source changes) ----
+  function initPlayerControls() {
+    var video = qs("#playerVideo");
+    var box = qs("#playerBox");
+    if (!video || !box) return;
+
+    var playPauseBtn = qs("#playPauseBtn");
+    var centerPlayBtn = qs("#centerPlayBtn");
+    var seekRange = qs("#seekRange");
+    var seekPlayed = qs("#seekPlayed");
+    var seekBuffered = qs("#seekBuffered");
+    var seekThumb = qs("#seekThumb");
+    var timeDisplay = qs("#timeDisplay");
+    var muteBtn = qs("#muteBtn");
+    var volumeRange = qs("#volumeRange");
+    var fullscreenBtn = qs("#fullscreenBtn");
+    var seeking = false;
+
+    function fmt(t) {
+      if (!isFinite(t) || t < 0) t = 0;
+      var h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = Math.floor(t % 60);
+      return (h ? h + ":" + String(m).padStart(2, "0") : String(m)) + ":" + String(s).padStart(2, "0");
+    }
+
+    function updatePlayIcon() {
+      var playing = !video.paused && !video.ended;
+      playPauseBtn.innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
+      playPauseBtn.title = playing ? "Pause" : "Play";
+      centerPlayBtn.style.display = playing ? "none" : "flex";
+    }
+    function updateProgress() {
+      if (seeking) return;
+      var dur = video.duration || 0;
+      var pct = dur ? (video.currentTime / dur) * 100 : 0;
+      seekRange.value = pct * 10;
+      seekPlayed.style.width = pct + "%";
+      seekThumb.style.left = pct + "%";
+      timeDisplay.textContent = fmt(video.currentTime) + " / " + fmt(dur);
+    }
+    function updateBuffered() {
+      var dur = video.duration || 0;
+      if (!dur || !video.buffered.length) return;
+      var end = video.buffered.end(video.buffered.length - 1);
+      seekBuffered.style.width = Math.min(100, (end / dur) * 100) + "%";
+    }
+    function togglePlay() {
+      if (video.paused || video.ended) video.play().catch(function () {});
+      else video.pause();
+    }
+    function updateMuteIcon() {
+      var isMuted = video.muted || video.volume === 0;
+      muteBtn.innerHTML = isMuted ? ICON_MUTED : ICON_VOLUME;
+      muteBtn.title = isMuted ? "Unmute" : "Mute";
+    }
+
+    video.addEventListener("play", updatePlayIcon);
+    video.addEventListener("pause", updatePlayIcon);
+    video.addEventListener("ended", updatePlayIcon);
+    video.addEventListener("timeupdate", function () { updateProgress(); updateBuffered(); });
+    video.addEventListener("progress", updateBuffered);
+    video.addEventListener("loadedmetadata", updateProgress);
+    video.addEventListener("volumechange", updateMuteIcon);
+
+    playPauseBtn.addEventListener("click", togglePlay);
+    centerPlayBtn.addEventListener("click", togglePlay);
+    video.addEventListener("click", togglePlay);
+
+    seekRange.addEventListener("input", function () {
+      seeking = true;
+      var dur = video.duration || 0;
+      var pct = seekRange.value / 10;
+      seekPlayed.style.width = pct + "%";
+      seekThumb.style.left = pct + "%";
+      timeDisplay.textContent = fmt((pct / 100) * dur) + " / " + fmt(dur);
+    });
+    seekRange.addEventListener("change", function () {
+      var dur = video.duration || 0;
+      video.currentTime = (seekRange.value / 1000) * dur;
+      seeking = false;
+    });
+
+    muteBtn.addEventListener("click", function () { video.muted = !video.muted; });
+    volumeRange.addEventListener("input", function () {
+      video.volume = volumeRange.value / 100;
+      video.muted = video.volume === 0;
+    });
+    updateMuteIcon();
+
+    fullscreenBtn.addEventListener("click", function () {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (box.requestFullscreen) box.requestFullscreen().catch(function () {});
+    });
+    function updateFullscreenTitle() {
+      fullscreenBtn.title = document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen";
+    }
+    document.addEventListener("fullscreenchange", updateFullscreenTitle);
+    view.addEventListener("view-unload", function () { document.removeEventListener("fullscreenchange", updateFullscreenTitle); }, { once: true });
+
+    // Auto-hide the control bar during playback after a few idle seconds;
+    // always show it again on mouse movement or once paused.
+    var hideTimer = null;
+    function showControls() {
+      box.classList.remove("controls-hidden");
+      clearTimeout(hideTimer);
+      if (!video.paused) hideTimer = setTimeout(function () { box.classList.add("controls-hidden"); }, 3000);
+    }
+    box.addEventListener("mousemove", showControls);
+    box.addEventListener("mouseleave", function () { if (!video.paused) box.classList.add("controls-hidden"); });
+    video.addEventListener("play", showControls);
+    showControls();
+
+    // Keyboard shortcuts while the watch page is open.
+    function onKeydown(e) {
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+      if (e.code === "Space") { e.preventDefault(); togglePlay(); }
+      else if (e.code === "ArrowRight") { video.currentTime = Math.min(video.duration || 0, video.currentTime + 5); }
+      else if (e.code === "ArrowLeft") { video.currentTime = Math.max(0, video.currentTime - 5); }
+      // NOTE: mirror volumeRange's own unmute-on-change behavior — without
+      // this, raising volume with ArrowUp while muted visibly moves the
+      // slider but audio stays silent, since only the slider's own input
+      // handler used to touch video.muted.
+      else if (e.code === "ArrowUp") { e.preventDefault(); video.volume = Math.min(1, video.volume + 0.1); video.muted = video.volume === 0; volumeRange.value = video.volume * 100; }
+      else if (e.code === "ArrowDown") { e.preventDefault(); video.volume = Math.max(0, video.volume - 0.1); video.muted = video.volume === 0; volumeRange.value = video.volume * 100; }
+      else if (e.code === "KeyF") { fullscreenBtn.click(); }
+      else if (e.code === "KeyM") { video.muted = !video.muted; }
+    }
+    document.addEventListener("keydown", onKeydown);
+    view.addEventListener("view-unload", function () { document.removeEventListener("keydown", onKeydown); }, { once: true });
+
+    updatePlayIcon();
+  }
+
+  // NOTE: guards against rapidly clicking between server pills — without
+  // this, an earlier server's slower /stream/resolve response could land
+  // after a later one and silently swap the player back to the wrong
+  // server's stream.
+  var resolveToken = 0;
+  function resolveAndPlay(linkId, slug) {
+    var myToken = ++resolveToken;
+    clearPlayerMessage();
+    showPlayerMessage("Resolving stream…");
+    get("/stream/resolve?id=" + encodeURIComponent(linkId) + "&slug=" + encodeURIComponent(slug)).then(function (r) {
+      if (myToken !== resolveToken) return; // a newer server selection superseded this one
+      clearPlayerMessage();
+      var videoEl = qs("#playerVideo");
+      if (!r || !r.url) { showPlayerMessage("This server has no playable stream — try another server."); return; }
+      var refOrigin = null;
+      try { refOrigin = r.embedUrl ? new URL(r.embedUrl).origin : null; } catch (e) {}
+      attachSource(videoEl, r.url, r.type, refOrigin);
+
+      if (r.skipData && videoEl) {
+        var normRange = function (v) {
+          if (!v) return null;
+          var start = Array.isArray(v) ? v[0] : v.start;
+          var end = Array.isArray(v) ? v[1] : v.end;
+          if (!end) return null;
+          return { start: start || 0, end: end };
+        };
+        var intro = normRange(r.skipData.intro || r.skipData.op);
+        var outro = normRange(r.skipData.outro || r.skipData.ed);
+        var skipBtn = qs("#skipBtn");
+        videoEl.addEventListener("timeupdate", function () {
+          var t = videoEl.currentTime;
+          var inIntro = intro && t >= intro.start && t <= intro.end;
+          var inOutro = outro && t >= outro.start && t <= outro.end;
+          if (skipBtn) {
+            if (inIntro) { skipBtn.style.display = ""; skipBtn.textContent = "Skip Intro »"; skipBtn.onclick = function () { videoEl.currentTime = intro.end; }; }
+            else if (inOutro) { skipBtn.style.display = ""; skipBtn.textContent = "Skip Outro »"; skipBtn.onclick = function () { videoEl.currentTime = outro.end; }; }
+            else { skipBtn.style.display = "none"; }
+          }
+        });
+      }
+    }).catch(function (err) {
+      if (myToken !== resolveToken) return;
+      var msg = "Couldn't resolve stream: " + err.message;
+      if (err.retryAfter) msg += " (try again in " + err.retryAfter + "s)";
+      showPlayerMessage(msg);
+    });
+  }
+
+  var historyTimer = null;
+  function recordWatchHistory(slug, anime, episodeNumber, episodeTitle, durationMinutes) {
+    if (historyTimer) clearInterval(historyTimer);
+    var fallbackTotal = durationMinutes > 0 ? durationMinutes : 24;
+    function record() {
+      // NOTE: prefer the actual <video> element's playback position over a
+      // wall-clock estimate — the old elapsed-time-since-page-load approach
+      // kept climbing even while paused, seeking backward, or stalled on
+      // buffering, so History/Continue Watching progress didn't reflect
+      // what was actually watched.
+      var videoEl = qs("#playerVideo");
+      var progressPercent, totalMinutes;
+      if (videoEl && videoEl.duration && !isNaN(videoEl.duration)) {
+        progressPercent = Math.min(100, Math.round((videoEl.currentTime / videoEl.duration) * 100));
+        totalMinutes = Math.round(videoEl.duration / 60);
+      } else {
+        // Video metadata not loaded yet (still resolving/buffering the
+        // stream) — report 0 rather than a guessed value with no basis.
+        progressPercent = 0;
+        totalMinutes = fallbackTotal;
+      }
+      upsertHistory({
+        slug: slug,
+        poster: anime.poster,
+        title: anime.title,
+        episodeNumber: episodeNumber,
+        episodeTitle: episodeTitle,
+        watchedAt: new Date().toISOString(),
+        progressPercent: progressPercent,
+        duration: totalMinutes + "m"
+      });
+    }
+    record();
+    historyTimer = setInterval(record, 15000);
+    view.addEventListener("view-unload", function () { clearInterval(historyTimer); }, { once: true });
+  }
+
+  function renderWatch(slug, ep) {
+    ep = parseInt(ep) || 1;
+    view.innerHTML = loadingHTML("Loading episode " + ep + "…");
+
+    Promise.all([
+      get("/watch?slug=" + encodeURIComponent(slug) + "&ep=" + ep),
+      get("/episodes/" + encodeURIComponent(slug)).catch(function () { return { episodes: [] }; })
+    ]).then(function (r) {
+      var w = r[0];
+      var epData = r[1] || {};
+      var episodes = epData.episodes || [];
+      var servers = w.servers || [];
+      var subServers = servers.filter(function (s) { return s.type === "sub"; });
+      var dubServers = servers.filter(function (s) { return s.type === "dub"; });
+      var otherServers = servers.filter(function (s) { return s.type !== "sub" && s.type !== "dub"; });
+
+      function serverPills(list, groupLabel, type) {
+        if (!list.length) return "";
+        return '<div class="server-group"><div class="server-group-label">' + groupLabel + '</div><div class="server-pills">' +
+          list.map(function (s, i) {
+            return '<button class="server-pill" data-link="' + escapeHtml(s.linkId) + '" data-type="' + type + '">' + escapeHtml(s.name || ("Server " + (i + 1))) + "</button>";
+          }).join("") + "</div></div>";
+      }
+
+      var epButtons = episodes.map(function (e) {
+        return '<a class="ep-btn' + (e.episode_no === ep ? " current" : "") + '" href="#/watch/' + encodeURIComponent(slug) + "/" + e.episode_no + '">' + e.episode_no + "</a>";
+      }).join("");
+
+      var currentIdx = episodes.findIndex ? episodes.findIndex(function (e) { return e.episode_no === ep; }) : -1;
+      var hasPrev = currentIdx > 0;
+      var hasNext = currentIdx >= 0 && currentIdx < episodes.length - 1;
+      var currentEpisodeData = episodes[currentIdx];
+      var isMovie = /movie/i.test(w.type || "") && episodes.length <= 1;
+
+      view.innerHTML =
+        '<div class="watch-wrap"><div class="container player-shell">' +
+        '<div class="player-box" id="playerBox">' +
+        '<video id="playerVideo" playsinline></video>' +
+        '<button class="skip-btn" id="skipBtn"></button>' +
+        '<button class="center-play-btn" id="centerPlayBtn" title="Play">' + ICON_PLAY_BIG + "</button>" +
+        '<div class="player-controls">' +
+        '<div class="seek-row">' +
+        '<div class="seek-track"></div><div class="seek-buffered" id="seekBuffered"></div><div class="seek-played" id="seekPlayed"></div><div class="seek-thumb" id="seekThumb"></div>' +
+        '<input type="range" class="seek-input" id="seekRange" min="0" max="1000" step="1" value="0" aria-label="Seek" />' +
+        "</div>" +
+        '<div class="control-row">' +
+        '<button class="control-btn" id="playPauseBtn" title="Play/Pause">' + ICON_PLAY + "</button>" +
+        '<span class="time-display" id="timeDisplay">0:00 / 0:00</span>' +
+        '<div class="control-spacer"></div>' +
+        '<select class="quality-select" id="qualitySelect" style="display:none"></select>' +
+        '<div class="volume-row"><button class="control-btn" id="muteBtn" title="Mute">' + ICON_VOLUME + "</button>" +
+        '<input type="range" id="volumeRange" min="0" max="100" value="100" aria-label="Volume" /></div>' +
+        '<button class="control-btn" id="fullscreenBtn" title="Fullscreen">' + ICON_FULLSCREEN + "</button>" +
+        "</div></div>" +
+        "</div>" +
+        '<div class="watch-title-row"><h1>' + escapeHtml(w.title) + (isMovie ? "" : " — Episode " + ep) + "</h1>" +
+        (isMovie ? "" :
+          '<div class="ep-nav">' +
+          '<button id="prevEpBtn"' + (hasPrev ? "" : " disabled") + '>‹ Prev</button>' +
+          '<button id="nextEpBtn"' + (hasNext ? "" : " disabled") + ">Next ›</button>" +
+          "</div>") +
+        "</div>" +
+        '<div class="server-panel">' +
+        serverPills(subServers, "Subbed", "sub") +
+        serverPills(dubServers, "Dubbed", "dub") +
+        serverPills(otherServers, "Servers", "other") +
+        "</div>" +
+        (isMovie ? "" :
+          '<div class="row-head"><h2>Episodes</h2></div>' +
+          (episodes.length ? '<div class="ep-grid" style="margin-bottom:30px">' + epButtons + "</div>" : "")) +
+        (w.synopsis ? '<p class="synopsis">' + escapeHtml(w.synopsis) + "</p>" : "") +
+        "</div>" +
+        relatedSectionHTML("watchRelatedA") +
+        relatedSectionHTML("watchRelatedB") +
+        "</div>";
+
+      initPlayerControls();
+
+      qsa(".server-pill").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          qsa(".server-pill").forEach(function (b) { b.classList.remove("active"); });
+          btn.classList.add("active");
+          resolveAndPlay(btn.getAttribute("data-link"), slug);
+        });
+      });
+
+      // Default to whichever server matches the user's saved audio
+      // preference (top-bar Sub/Dub toggle), falling back to whatever's
+      // available if that type has no servers for this episode.
+      var preferredPill = qs('.server-pill[data-type="' + getAudioPref() + '"]');
+      var firstPill = preferredPill || qs(".server-pill");
+      if (firstPill) firstPill.click();
+      else showPlayerMessage("No servers found for this episode.");
+
+      recordWatchHistory(slug, { poster: w.poster, title: w.title }, ep, currentEpisodeData ? currentEpisodeData.title : ("Episode " + ep), parseInt(w.duration, 10));
+
+      loadRelated("watchRelatedA", w.genres, slug, "Related Anime", 0);
+      loadRelated("watchRelatedB", w.genres, slug, "You Might Also Like", 1);
+
+      var prevBtn = qs("#prevEpBtn");
+      var nextBtn = qs("#nextEpBtn");
+      if (prevBtn) prevBtn.addEventListener("click", function () {
+        if (hasPrev) window.location.hash = "#/watch/" + encodeURIComponent(slug) + "/" + episodes[currentIdx - 1].episode_no;
+      });
+      if (nextBtn) nextBtn.addEventListener("click", function () {
+        if (hasNext) window.location.hash = "#/watch/" + encodeURIComponent(slug) + "/" + episodes[currentIdx + 1].episode_no;
+      });
+    }).catch(function (err) {
+      view.innerHTML = errorHTML("Couldn't load this episode: " + err.message);
+    });
+  }
+
+  // ================= Router =================
+  function parseQuery(str) {
+    var out = {};
+    if (!str) return out;
+    new URLSearchParams(str).forEach(function (v, k) { out[k] = v; });
+    return out;
+  }
+
+  function renderRoute() {
+    destroyPlayer();
+    view.dispatchEvent(new Event("view-unload"));
+    window.scrollTo(0, 0);
+
+    var raw = window.location.hash.slice(1) || "/";
+    var qIdx = raw.indexOf("?");
+    var hash = qIdx >= 0 ? raw.slice(0, qIdx) : raw;
+    var queryStr = qIdx >= 0 ? raw.slice(qIdx + 1) : "";
+    var parts = hash.split("/").filter(Boolean);
+
+    if (parts.length === 0) { updateRailActive("/"); return renderHome(); }
+    if (parts[0] === "search") { updateRailActive("/search"); return renderSearch(decodeURIComponent(parts[1] || ""), parseQuery(queryStr)); }
+    if (parts[0] === "anime") { updateRailActive(""); return renderAnime(decodeURIComponent(parts[1] || "")); }
+    if (parts[0] === "watch") { updateRailActive(""); return renderWatch(decodeURIComponent(parts[1] || ""), parts[2] || "1"); }
+    if (parts[0] === "discover") { updateRailActive("/discover"); return renderDiscover(); }
+    if (parts[0] === "recents") { updateRailActive("/recents"); return renderRecents(parts[1]); }
+    if (parts[0] === "schedule") { updateRailActive("/schedule"); return renderSchedule(parts[1]); }
+    if (parts[0] === "history") { updateRailActive("/history"); return renderHistoryPage(); }
+    if (parts[0] === "az") { updateRailActive("/"); return renderAzList(decodeURIComponent(parts[1] || "all"), parts[2]); }
+    updateRailActive("/");
+    renderHome();
+  }
+
+  window.addEventListener("hashchange", renderRoute);
+  window.addEventListener("DOMContentLoaded", renderRoute);
+  if (document.readyState !== "loading") renderRoute();
+})();
+</script>
