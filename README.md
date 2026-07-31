@@ -2,30 +2,9 @@
 > **API MAYBE Temporarily Paused** due to suspiciously too many requests. My hosted version of this API is only for testing purposes. You MUST host your own instance to use the API.
 
 <div align="center">
-  
-  <img src="https://capsule-render.vercel.app/api?type=waving&height=300&color=gradient&text=𝘼𝙣𝙞𝙆𝙤𝙩𝙤𝘼𝙋𝙄&fontAlignY=30&fontSize=100&desc=𝖱𝖾𝖺𝗅-𝖳𝗂𝗆𝖾%20𝖠𝗇𝗂𝗆𝖾%20𝖲𝗍𝗋𝖾𝖺𝗆𝗂𝗇𝗀%20𝖣𝖺𝗍𝖺%20𝖠𝖯𝖨&descSize=30" />
+# AniKoto
 
 </div>
-
-<p align="center">
-  <a href="https://github.com/Shineii86/AniKotoAPI/stargazers"><img src="https://img.shields.io/github/stars/Shineii86/AniKotoAPI?style=for-the-badge&logo=github&color=f43f8e&logoColor=white" alt="Stars"/></a>
-  <a href="https://github.com/Shineii86/AniKotoAPI/network/members"><img src="https://img.shields.io/github/forks/Shineii86/AniKotoAPI?style=for-the-badge&logo=github&color=a855f7&logoColor=white" alt="Forks"/></a>
-  <a href="https://github.com/Shineii86/AniKotoAPI/issues"><img src="https://img.shields.io/github/issues/Shineii86/AniKotoAPI?style=for-the-badge&logo=github&color=7c3aed&logoColor=white" alt="Issues"/></a>
-  <a href="https://github.com/Shineii86/AniKotoAPI/pulls"><img src="https://img.shields.io/github/issues-pr/Shineii86/AniKotoAPI?style=for-the-badge&logo=github&color=ec4899&logoColor=white" alt="Pull Requests"/></a>
-  <a href="https://github.com/Shineii86/AniKotoAPI/commits"><img src="https://img.shields.io/github/last-commit/Shineii86/AniKotoAPI?style=for-the-badge&logo=github&color=6366f1&logoColor=white" alt="Last Commit"/></a>
-  <a href="https://github.com/Shineii86/AniKotoAPI/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Shineii86/AniKotoAPI?style=for-the-badge&logo=mit&color=22c55e&logoColor=white" alt="License"/></a>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Node.js-20-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js"/>
-  <img src="https://img.shields.io/badge/Express-4.21-000000?style=flat-square&logo=express&logoColor=white" alt="Express"/>
-  <img src="https://img.shields.io/badge/Cheerio-1.0-3572A5?style=flat-square&logoColor=white" alt="Cheerio"/>
-  <img src="https://img.shields.io/badge/Vercel-Serverless-000000?style=flat-square&logo=vercel&logoColor=white" alt="Vercel"/>
-  <img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square&logo=mit&logoColor=white" alt="License"/>
-  <img src="https://img.shields.io/badge/Version-2.3.0-f43f8e?style=flat-square&logoColor=white" alt="Version"/>
-  <img src="https://img.shields.io/badge/Endpoints-43-6366f1?style=flat-square&logoColor=white" alt="Endpoints"/>
-  <img src="https://img.shields.io/badge/Anime-10000+-a855f7?style=flat-square&logoColor=white" alt="Anime Database"/>
-</p>
 
 <p align="center">
   <b>A RESTful anime data API, a full browsing website, and a standalone video player — all served from one process.</b><br/>
