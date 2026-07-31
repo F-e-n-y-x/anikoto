@@ -348,7 +348,7 @@ Both UIs are optional from the API's point of view — you can ignore them entir
 ## 📁 Project Structure
 
 ```
-AniKotoAPI/
+anikoto/
 ├── 📂 frontend/                          # ▲ Next.js website (spawned internally, see Architecture)
 │   ├── 📂 src/                           #    App Router pages, components, lib
 │   └── 📄 package.json                   #    Its own deps — Next.js 15, React 19, Tailwind v4
@@ -447,8 +447,8 @@ AniKotoAPI/
 
 ```bash
 # 1️⃣ Clone the repository
-git clone https://github.com/Shineii86/AniKotoAPI.git
-cd AniKotoAPI
+git clone https://github.com/F-e-n-y-x/anikoto.git
+cd anikoto
 
 # 2️⃣ Install backend dependencies
 npm install
@@ -521,7 +521,7 @@ bun dev
 
 ### Base URL
 ```
-https://anikototvapi.vercel.app/api
+http://localhost:4444/api
 ```
 
 ### Streaming Flow
@@ -530,13 +530,13 @@ To get a stream URL, follow these 3 steps:
 
 ```bash
 # Step 1: Get episodes by animeId (returns server_ids)
-curl "https://anikototvapi.vercel.app/api/episodes/958"
+curl "http://localhost:4444/api/episodes/958"
 
 # Step 2: Get servers (pass server_ids from Step 1)
-curl "https://anikototvapi.vercel.app/api/servers?ids=dXNCT3hNQzk3THhSTW8ySnM5..."
+curl "http://localhost:4444/api/servers?ids=dXNCT3hNQzk3THhSTW8ySnM5..."
 
 # Step 3: Get stream URL (pass link_id from Step 2)
-curl "https://anikototvapi.vercel.app/api/stream?id=MTF1dkFtaW9BRTZPbzJJRElFZUZr..."
+curl "http://localhost:4444/api/stream?id=MTF1dkFtaW9BRTZPbzJJRElFZUZr..."
 ```
 
 ### Stream URL Resolution
@@ -545,13 +545,13 @@ The `/api/stream` endpoint returns an embed URL. To get the actual video URL (m3
 
 ```bash
 # Resolve embed URL to actual stream URL
-curl "https://anikototvapi.vercel.app/api/stream/resolve?id=MTF1dkFtaW9BRTZPbzJJRElFZUZr..."
+curl "http://localhost:4444/api/stream/resolve?id=MTF1dkFtaW9BRTZPbzJJRElFZUZr..."
 
 # Get quality options from an M3U8 playlist
-curl "https://anikototvapi.vercel.app/api/stream/qualities?url=https://example.com/playlist.m3u8"
+curl "http://localhost:4444/api/stream/qualities?url=https://example.com/playlist.m3u8"
 
 # Proxy M3U8 playlist (rewrites URLs for CORS-free playback)
-curl "https://anikototvapi.vercel.app/api/stream/proxy?url=https://example.com/playlist.m3u8"
+curl "http://localhost:4444/api/stream/proxy?url=https://example.com/playlist.m3u8"
 ```
 
 ### Dub & Sub Switch
@@ -600,12 +600,12 @@ const stream = await fetch(`/api/stream?id=${dubServer.link_id}`).then(r => r.js
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/"
+curl "http://localhost:4444/api/"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/");
+const resp = await axios.get("http://localhost:4444/api/");
 console.log(resp.data);
 ```
 
@@ -652,12 +652,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/top-ten"
+curl "http://localhost:4444/api/top-ten"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/top-ten");
+const resp = await axios.get("http://localhost:4444/api/top-ten");
 console.log(resp.data);
 ```
 
@@ -706,12 +706,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/search?keyword=one+piece"
+curl "http://localhost:4444/api/search?keyword=one+piece"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/search", {
+const resp = await axios.get("http://localhost:4444/api/search", {
   params: { keyword: "one piece", page: 1 }
 });
 console.log(resp.data);
@@ -752,12 +752,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/info?id=one-piece-odmau"
+curl "http://localhost:4444/api/info?id=one-piece-odmau"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/info", {
+const resp = await axios.get("http://localhost:4444/api/info", {
   params: { id: "one-piece-odmau" }
 });
 console.log(resp.data);
@@ -810,12 +810,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/random"
+curl "http://localhost:4444/api/random"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/random");
+const resp = await axios.get("http://localhost:4444/api/random");
 console.log(resp.data);
 ```
 
@@ -858,12 +858,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/schedule?date=2026-06-08"
+curl "http://localhost:4444/api/schedule?date=2026-06-08"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/schedule", {
+const resp = await axios.get("http://localhost:4444/api/schedule", {
   params: { date: "2026-06-08" }
 });
 console.log(resp.data);
@@ -907,12 +907,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/episodes/958"
+curl "http://localhost:4444/api/episodes/958"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/episodes/958");
+const resp = await axios.get("http://localhost:4444/api/episodes/958");
 console.log(resp.data);
 ```
 
@@ -950,12 +950,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/watch?slug=one-piece-odmau&ep=1165"
+curl "http://localhost:4444/api/watch?slug=one-piece-odmau&ep=1165"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/watch", {
+const resp = await axios.get("http://localhost:4444/api/watch", {
   params: { slug: "one-piece-odmau", ep: 1165 }
 });
 console.log(resp.data);
@@ -1020,12 +1020,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/servers?ids={server_ids}"
+curl "http://localhost:4444/api/servers?ids={server_ids}"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/servers", {
+const resp = await axios.get("http://localhost:4444/api/servers", {
   params: { ids: "yourServerIds" }
 });
 console.log(resp.data);
@@ -1078,12 +1078,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/mapper-servers?malId=21&slug=one-piece&timestamp=1717900000"
+curl "http://localhost:4444/api/mapper-servers?malId=21&slug=one-piece&timestamp=1717900000"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/mapper-servers", {
+const resp = await axios.get("http://localhost:4444/api/mapper-servers", {
   params: { malId: 21, slug: "one-piece", timestamp: 1717900000 }
 });
 console.log(resp.data);
@@ -1122,12 +1122,12 @@ Server list for an episode — returns available streaming servers with their na
 | `ids` | `string` | **required** | `server_ids` from `/episodes` response (base64-encoded) |
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/servers?ids={server_ids}"
+curl "http://localhost:4444/api/servers?ids={server_ids}"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/servers", {
+const resp = await axios.get("http://localhost:4444/api/servers", {
   params: { ids: "yourServerIds" }
 });
 console.log(resp.data);
@@ -1174,12 +1174,12 @@ Mapper API — fetches additional streaming servers from gogoanime/anivibe via t
 | `timestamp` | `number` | **required** | Current timestamp |
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/mapper-servers?malId=21&slug=one-piece&timestamp=1717900000"
+curl "http://localhost:4444/api/mapper-servers?malId=21&slug=one-piece&timestamp=1717900000"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/mapper-servers", {
+const resp = await axios.get("http://localhost:4444/api/mapper-servers", {
   params: { malId: 21, slug: "one-piece", timestamp: 1717900000 }
 });
 console.log(resp.data);
@@ -1220,12 +1220,12 @@ Get streaming URL for a server. Pass the `link_id` from `/api/servers` response.
 | `id` | `string` | **required** | `link_id` from `/servers` response (lowercase `id` required) |
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/stream?id=MTF1dkFtaW9BRTZPbzJJRElFZUZr..."
+curl "http://localhost:4444/api/stream?id=MTF1dkFtaW9BRTZPbzJJRElFZUZr..."
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/stream", {
+const resp = await axios.get("http://localhost:4444/api/stream", {
   params: { id: "yourLinkId" }
 });
 console.log(resp.data);
@@ -1256,12 +1256,12 @@ console.log(resp.data);
 Top 10 anime rankings for day, week, and month.
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/top-ten"
+curl "http://localhost:4444/api/top-ten"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/top-ten");
+const resp = await axios.get("http://localhost:4444/api/top-ten");
 console.log(resp.data);
 ```
 
@@ -1309,12 +1309,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/spotlight"
+curl "http://localhost:4444/api/spotlight"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/spotlight");
+const resp = await axios.get("http://localhost:4444/api/spotlight");
 console.log(resp.data);
 ```
 
@@ -1375,12 +1375,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/trending"
+curl "http://localhost:4444/api/trending"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/trending");
+const resp = await axios.get("http://localhost:4444/api/trending");
 console.log(resp.data);
 ```
 
@@ -1443,12 +1443,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/most-popular?page=1"
+curl "http://localhost:4444/api/most-popular?page=1"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/most-popular", {
+const resp = await axios.get("http://localhost:4444/api/most-popular", {
   params: { page: 1 }
 });
 console.log(resp.data);
@@ -1522,12 +1522,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/new-release?page=1"
+curl "http://localhost:4444/api/new-release?page=1"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/new-release", {
+const resp = await axios.get("http://localhost:4444/api/new-release", {
   params: { page: 1 }
 });
 console.log(resp.data);
@@ -1568,12 +1568,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/newly-added?page=1"
+curl "http://localhost:4444/api/newly-added?page=1"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/newly-added", {
+const resp = await axios.get("http://localhost:4444/api/newly-added", {
   params: { page: 1 }
 });
 console.log(resp.data);
@@ -1612,12 +1612,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/trending-sidebar"
+curl "http://localhost:4444/api/trending-sidebar"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/trending-sidebar");
+const resp = await axios.get("http://localhost:4444/api/trending-sidebar");
 console.log(resp.data);
 ```
 
@@ -1671,12 +1671,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/genre/action?page=1"
+curl "http://localhost:4444/api/genre/action?page=1"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/genre/action", {
+const resp = await axios.get("http://localhost:4444/api/genre/action", {
   params: { page: 1 }
 });
 console.log(resp.data);
@@ -1716,12 +1716,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/type/movie?page=1"
+curl "http://localhost:4444/api/type/movie?page=1"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/type/movie", {
+const resp = await axios.get("http://localhost:4444/api/type/movie", {
   params: { page: 1 }
 });
 console.log(resp.data);
@@ -1774,12 +1774,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/status/currently-airing?page=1"
+curl "http://localhost:4444/api/status/currently-airing?page=1"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/status/currently-airing", {
+const resp = await axios.get("http://localhost:4444/api/status/currently-airing", {
   params: { page: 1 }
 });
 console.log(resp.data);
@@ -1831,12 +1831,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/az-list/a?page=1"
+curl "http://localhost:4444/api/az-list/a?page=1"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/az-list/a", {
+const resp = await axios.get("http://localhost:4444/api/az-list/a", {
   params: { page: 1 }
 });
 console.log(resp.data);
@@ -1893,12 +1893,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/filter?genre=action&type=tv&page=1"
+curl "http://localhost:4444/api/filter?genre=action&type=tv&page=1"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/filter", {
+const resp = await axios.get("http://localhost:4444/api/filter", {
   params: { genre: "action", type: "tv", page: 1 }
 });
 console.log(resp.data);
@@ -1939,12 +1939,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/suggestions?keyword=naruto"
+curl "http://localhost:4444/api/suggestions?keyword=naruto"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/suggestions", {
+const resp = await axios.get("http://localhost:4444/api/suggestions", {
   params: { keyword: "naruto" }
 });
 console.log(resp.data);
@@ -1982,12 +1982,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/latest-updated"
+curl "http://localhost:4444/api/latest-updated"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/latest-updated");
+const resp = await axios.get("http://localhost:4444/api/latest-updated");
 console.log(resp.data);
 ```
 
@@ -2010,12 +2010,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/seasons/1642"
+curl "http://localhost:4444/api/seasons/1642"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/seasons/1642");
+const resp = await axios.get("http://localhost:4444/api/seasons/1642");
 console.log(resp.data);
 ```
 
@@ -2038,12 +2038,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/watch-order/1642"
+curl "http://localhost:4444/api/watch-order/1642"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/watch-order/1642");
+const resp = await axios.get("http://localhost:4444/api/watch-order/1642");
 console.log(resp.data);
 ```
 
@@ -2067,12 +2067,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/download?slug=one-piece-odmau&ep=1165"
+curl "http://localhost:4444/api/download?slug=one-piece-odmau&ep=1165"
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/download", {
+const resp = await axios.get("http://localhost:4444/api/download", {
   params: { slug: "one-piece-odmau", ep: 1165 }
 });
 console.log(resp.data);
@@ -2098,12 +2098,12 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/stream/resolve?id=MTF1dkFtaW9BRTZPbzJJRElFZUZr..."
+curl "http://localhost:4444/api/stream/resolve?id=MTF1dkFtaW9BRTZPbzJJRElFZUZr..."
 ```
 
 ```javascript
 import axios from "axios";
-const resp = await axios.get("https://anikototvapi.vercel.app/api/stream/resolve", {
+const resp = await axios.get("http://localhost:4444/api/stream/resolve", {
   params: { id: "yourLinkId" }
 });
 console.log(resp.data);
@@ -2142,7 +2142,7 @@ console.log(resp.data);
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/stream/qualities?url=https://example.com/playlist.m3u8"
+curl "http://localhost:4444/api/stream/qualities?url=https://example.com/playlist.m3u8"
 ```
 
 #### Sample Response
@@ -2181,12 +2181,12 @@ Rewrites relative URLs inside an M3U8 playlist to proxy through the API, adding 
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/stream/proxy?url=https://example.com/playlist.m3u8"
+curl "http://localhost:4444/api/stream/proxy?url=https://example.com/playlist.m3u8"
 ```
 
 #### Sample Response
 
-Raw M3U8 content with URLs rewritten to `https://anikototvapi.vercel.app/api/stream/proxy?url=...` and `https://anikototvapi.vercel.app/api/stream/ts-proxy?url=...` for `.ts` segments.
+Raw M3U8 content with URLs rewritten to `http://localhost:4444/api/stream/proxy?url=...` and `http://localhost:4444/api/stream/ts-proxy?url=...` for `.ts` segments.
 
 ---
 
@@ -2209,7 +2209,7 @@ Proxies `.ts` video segments with proper `Content-Type: video/mp2t` and CORS hea
 #### Example of request
 
 ```bash
-curl "https://anikototvapi.vercel.app/api/stream/ts-proxy?url=https://example.com/segment.ts"
+curl "http://localhost:4444/api/stream/ts-proxy?url=https://example.com/segment.ts"
 ```
 
 #### Sample Response
@@ -2355,14 +2355,14 @@ CMD ["npm", "start"]
 
 Host your own instance — `render.yaml` also installs and builds the frontend before starting.
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Shineii86/AniKotoAPI)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/F-e-n-y-x/anikoto)
 
 ### 🖥️ Standalone Server (VPS, etc.)
 
 ```bash
 # Clone and install
-git clone https://github.com/Shineii86/AniKotoAPI.git
-cd AniKotoAPI
+git clone https://github.com/F-e-n-y-x/anikoto.git
+cd anikoto
 npm install
 cd frontend && npm install && npm run build && cd ..
 
@@ -2373,7 +2373,7 @@ npm start
 
 ### ▲ Vercel (API-only)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Shineii86/AniKotoAPI)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/F-e-n-y-x/anikoto)
 
 1. Click the button above (or import manually on vercel.com)
 2. Vercel auto-detects the project — no config needed for the API itself
@@ -2425,7 +2425,7 @@ npx vercel --prod
 | **2.3.0** | 2026-07-31 | Documented the merged Next.js frontend + `/web` player; content-verified stream proxy (fixed video playback truncation); pagination/layout fixes; rate limit raised 100→300; dead code removed |
 | **2.2.0** | 2026-07-28 | Streaming resolver, M3U8/TS proxy, 5 new endpoints, bug fixes, full diagnostic sweep |
 | **1.7.2** | 2026-06-08 | Full rebrand AniKotoAPI → AniKotoAPI, docs folder with real data, streaming fix |
-| **1.7.1** | 2026-06-08 | Updated Vercel URL to anikototvapi.vercel.app |
+| **1.7.1** | 2026-06-08 | Updated Vercel URL to localhost:4444 |
 | **1.7.0** | 2026-06-08 | Premium landing page with SVG icons, live console, particles, glassmorphism |
 | **1.6.0** | 2026-06-08 | Anti-bot bypass, public files, GitHub repo topics |
 | **1.5.0** | 2026-06-08 | Complete documentation rewrite with AlisaReactionBot style |
@@ -2491,7 +2491,7 @@ Use <code>/api/filter</code> with query params. The <code>keyword</code> param i
 <details>
 <summary><b>📡 Can I use this in my frontend app?</b></summary>
 <br/>
-Yes! CORS is enabled for all origins (<code>*</code>). Just make fetch requests to the API endpoints. No API key needed. Example: <code>fetch('https://anikototvapi.vercel.app/api/search?keyword=naruto')</code>
+Yes! CORS is enabled for all origins (<code>*</code>). Just make fetch requests to the API endpoints. No API key needed. Example: <code>fetch('http://localhost:4444/api/search?keyword=naruto')</code>
 </details>
 
 <details>
@@ -2575,7 +2575,7 @@ The API can access 10,000+ anime titles from anikototv.to. The most-popular endp
 ### 🐛 Report Bugs
 Found something broken?
 
-[Open an Issue](https://github.com/Shineii86/AniKotoAPI/issues)
+[Open an Issue](https://github.com/F-e-n-y-x/anikoto/issues)
 
 </td>
 <td width="25%" align="center">
@@ -2583,7 +2583,7 @@ Found something broken?
 ### 💡 Suggest Features
 Have an idea?
 
-[Start a Discussion](https://github.com/Shineii86/AniKotoAPI/issues)
+[Start a Discussion](https://github.com/F-e-n-y-x/anikoto/issues)
 
 </td>
 <td width="25%" align="center">
@@ -2591,7 +2591,7 @@ Have an idea?
 ### 🔀 Submit PRs
 Ready to contribute code?
 
-[Fork & Submit](https://github.com/Shineii86/AniKotoAPI/fork)
+[Fork & Submit](https://github.com/F-e-n-y-x/anikoto/fork)
 
 </td>
 </tr>
@@ -2604,8 +2604,8 @@ Ready to contribute code?
 # Click the "Fork" button on GitHub
 
 # 2️⃣ Clone your fork
-git clone https://github.com/YOUR_USERNAME/AniKotoAPI.git
-cd AniKotoAPI
+git clone https://github.com/YOUR_USERNAME/anikoto.git
+cd anikoto
 
 # 3️⃣ Create a feature branch
 git checkout -b feature/amazing-feature
@@ -2682,7 +2682,7 @@ Free to use, modify, and distribute — see the [LICENSE](LICENSE) file for deta
 
 <div align="center">
 
-  <a href="https://github.com/Shineii86/AniKotoAPI">
+  <a href="https://github.com/F-e-n-y-x/anikoto">
   <img src="https://github.com/AniWaifuBot/Waifus/blob/main/Source/Banner.png" alt="Banner" width="100%" />
   </a>
   
@@ -2704,8 +2704,8 @@ Free to use, modify, and distribute — see the [LICENSE](LICENSE) file for deta
 ## ⭐ Star History
 
 <p align="center">
-  <a href="https://star-history.com/#Shineii86/AniKotoAPI&Date">
-    <img src="https://api.star-history.com/svg?repos=Shineii86/AniKotoAPI&type=Date" alt="Star History Chart" width="100%"/>
+  <a href="https://star-history.com/#F-e-n-y-x/anikoto&Date">
+    <img src="https://api.star-history.com/svg?repos=F-e-n-y-x/anikoto&type=Date" alt="Star History Chart" width="100%"/>
   </a>
 </p>
 
