@@ -1,10 +1,7 @@
 > [!NOTE]
 > **API MAYBE Temporarily Paused** due to suspiciously too many requests. My hosted version of this API is only for testing purposes. You MUST host your own instance to use the API.
 
-<div align="center">
-# AniKoto
-
-</div>
+<h1 align="center">AniKoto</h1>
 
 <p align="center">
   <b>A RESTful anime data API, a full browsing website, and a standalone video player — all served from one process.</b><br/>
