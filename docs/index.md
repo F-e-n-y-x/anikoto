@@ -1,13 +1,13 @@
 # // === HEADER ===
-# AniKotoAPI v2.2.0
+# AniKotoAPI v2.3.0
 # Free REST API for Anime Data
 # Scraping anikototv.to with Cheerio
 
 ---
 
-![AniKotoAPI](https://img.shields.io/badge/AniKotoAPI-v2.2.0-blue)
+![AniKotoAPI](https://img.shields.io/badge/AniKotoAPI-v2.3.0-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Endpoints](https://img.shields.io/badge/Endpoints-38+-orange)
+![Endpoints](https://img.shields.io/badge/Endpoints-43-orange)
 ![Node.js](https://img.shields.io/badge/Node.js-18+-brightgreen)
 
 > A fast, free REST API that scrapes anime data from **anikototv.to**.
@@ -45,12 +45,13 @@ That's it. No API keys required.
 
 | Feature | Description |
 |---|---|
-| **38+ Endpoints** | Full coverage of anime data, streaming, and discovery |
-| **28 HTML Scrapers** | Cheerio-based scrapers for robust data extraction |
-| **28 Route Handlers** | Organized controllers with clean separation of concerns |
+| **43 Endpoints** | Full coverage of anime data, streaming, and discovery |
+| **27 HTML Extractors** | Cheerio-based scrapers for robust data extraction |
+| **27 Controllers** | Organized route handlers with clean separation of concerns |
+| **Merged Frontend + `/web` Player** | Full Next.js site and a standalone browsing/player app, one port |
 | **5 Mirror Domains** | Automatic failover across multiple source domains |
 | **LRU Cache** | Per-endpoint TTL caching for performance |
-| **Rate Limiting** | 100 requests per 15 minutes per IP |
+| **Rate Limiting** | 300 requests per minute per IP (configurable via `RATE_LIMIT` env var) |
 | **GZIP Compression** | Compressed responses for faster transfers |
 | **Vercel Deployment** | Zero-config serverless deployment |
 | **OpenAPI Spec** | Auto-generated API documentation at `/api/openapi` |
@@ -160,44 +161,27 @@ That's it. No API keys required.
 
 ---
 
+## // === APPLICATION ARCHITECTURE ===
+
+AniKotoAPI is no longer just a REST API — `server.js` now runs three things behind a single Express server on one port:
+
+1. **The REST API** — every `/api/*` route, handled by the controllers/extractors described below.
+2. **A Next.js frontend** (`frontend/`) — spawned by `server.js` as a child process (`npm run dev`/`npm run start`) on an internal port (`NEXT_INTERNAL_PORT`, default `4001`). Every request that isn't `/api/*` or a static asset is reverse-proxied to it via `http-proxy-middleware`, so it serves the main site at `/`. It talks back to the API over `API_INTERNAL_BASE` (`http://localhost:<PORT>/api`).
+3. **A standalone browsing/player app** at `/web` (`public/web/index.html`) — a self-contained vanilla JS/HTML/CSS single-page app (no build step, no framework) that consumes the same `/api/*` endpoints to browse anime and play episodes directly in the browser.
+
+If the `frontend/` directory or its `package.json` isn't present (e.g. a minimal API-only checkout), the Next.js spawn/proxy step is skipped and the server falls back to API + `/web` only.
+
 ## // === ARCHITECTURE ===
 
-```
-AniKotoAPI/
-├── api/                    # Vercel serverless functions
-│   ├── index.js            # Home endpoint
-│   ├── info.js             # Anime info
-│   ├── search.js           # Search
-│   ├── stream.js           # Streaming
-│   └── ...                 # 38+ route handlers
-├── scrapers/               # Cheerio HTML scrapers
-│   ├── home.js
-│   ├── info.js
-│   ├── search.js
-│   └── ...                 # 28 scrapers
-├── utils/                  # Shared utilities
-│   ├── cache.js            # LRU cache with TTL
-│   ├── rateLimit.js        # IP-based rate limiter
-│   ├── mirrors.js          # Mirror failover logic
-│   └── compress.js         # GZIP compression
-├── docs/                   # Documentation
-│   ├── index.md            # This file
-│   ├── endpoints.md        # Full API reference
-│   ├── streaming.md        # Streaming workflow
-│   ├── examples.md         # Code examples
-│   ├── architecture.md     # Design patterns
-│   └── testing.md          # Test suite docs
-├── package.json
-└── vercel.json
-```
+See [architecture.md](./architecture.md) for the full, accurate directory layout and component breakdown. In short: `src/controllers/` (27 route handlers), `src/extractors/` (27 Cheerio scrapers), `src/helper/` (cache, mirror fallback, pagination, etc.), `src/configs/`, `src/routes/`, plus `frontend/` (the Next.js site) and `public/web/` (the standalone player) — all served by one `server.js`.
 
 ### Key Design Patterns
 
-- **Scraping Layer**: 28 Cheerio-based scrapers parse HTML from anikototv.to, isolating page-specific logic from route handlers.
-- **Controller Layer**: 28 route handlers map HTTP requests to scraper calls, handle validation, and format responses.
-- **Cache Layer**: LRU cache with per-endpoint TTL reduces redundant scraping. Hot endpoints cache for 2–5 minutes; cold endpoints for 10+ minutes.
+- **Scraping Layer**: 27 Cheerio-based extractors parse HTML from anikototv.to, isolating page-specific logic from controllers.
+- **Controller Layer**: 27 controllers map HTTP requests to extractor calls, handle validation, and format responses.
+- **Cache Layer**: hand-rolled LRU cache with per-endpoint TTL reduces redundant scraping. TTLs range from 3 minutes (stream) to 60 minutes (genres) — see [architecture.md](./architecture.md#section-7) for the full matrix.
 - **Mirror Layer**: 5 source domains with automatic failover. If one domain is slow or down, requests transparently fall back to the next mirror.
-- **Rate Limiter**: Token bucket algorithm, 100 requests per 15-minute window per client IP.
+- **Rate Limiter**: Sliding-window request log per client IP, 300 requests per 1-minute window by default (configurable via `RATE_LIMIT`/`RATE_WINDOW`), scoped to `/api/*` only.
 
 ---
 
@@ -210,13 +194,13 @@ AniKotoAPI/
 curl https://anikototvapi.vercel.app/api/
 
 # Search for an anime
-curl "https://anikototvapi.vercel.app/api/search?q=one+piece"
+curl "https://anikototvapi.vercel.app/api/search?keyword=one+piece"
 
 # Get anime details
-curl "https://anikototvapi.vercel.app/api/info?link=/anime/one-piece"
+curl "https://anikototvapi.vercel.app/api/info?id=one-piece-odmau"
 
-# Get streaming servers
-curl "https://anikototvapi.vercel.app/api/servers?link=/one-piece-episode-1"
+# Get streaming servers (ids come from the episodes response's server_ids field)
+curl "https://anikototvapi.vercel.app/api/servers?ids=dXNCT3hNQzk3THhSTW8ySnM5..."
 
 # Get trending anime
 curl https://anikototvapi.vercel.app/api/trending
@@ -228,7 +212,7 @@ curl https://anikototvapi.vercel.app/api/trending
 const BASE = "https://anikototvapi.vercel.app/api";
 
 // Search
-const res = await fetch(`${BASE}/search?q=naruto`);
+const res = await fetch(`${BASE}/search?keyword=naruto`);
 const data = await res.json();
 console.log(data.results);
 ```
@@ -241,7 +225,7 @@ import requests
 BASE = "https://anikototvapi.vercel.app/api"
 
 # Search
-r = requests.get(f"{BASE}/search?q=naruto")
+r = requests.get(f"{BASE}/search", params={"keyword": "naruto"})
 print(r.json()["results"])
 ```
 
@@ -251,9 +235,9 @@ print(r.json()["results"])
 const axios = require("axios");
 const BASE = "https://anikototvapi.vercel.app/api";
 
-async function searchAnime(query) {
+async function searchAnime(keyword) {
   const { data } = await axios.get(`${BASE}/search`, {
-    params: { q: query }
+    params: { keyword }
   });
   return data.results;
 }
@@ -263,9 +247,10 @@ async function searchAnime(query) {
 
 ## // === RATE LIMITING ===
 
-- **Limit**: 100 requests per 15-minute window
-- **Scope**: Per client IP address
-- **Headers**: Rate limit info returned in response headers
+- **Limit**: 300 requests per 1-minute window (raised from the earlier 100/min default — a single home-page load alone fires ~5 parallel API calls, and normal interactive browsing comfortably exceeded 100/min)
+- **Configurable**: via the `RATE_LIMIT` (requests) and `RATE_WINDOW` (window in ms, default `60000`) env vars in `server.js`
+- **Scope**: Per client IP address, `/api/*` routes only — the proxied frontend's own page/asset requests are not counted
+- **Headers**: `X-RateLimit-Limit` / `X-RateLimit-Remaining` returned on every API response
 - **Exceeded**: Returns `429 Too Many Requests`
 
 If you hit the rate limit, wait for the window to reset before retrying.
@@ -286,15 +271,19 @@ Use `/api/mirrors` to check current mirror status, or `POST /api/mirrors/reset` 
 
 ## // === CACHING ===
 
-The API uses an LRU (Least Recently Used) cache with per-endpoint TTL:
+The API uses a hand-rolled LRU (Least Recently Used) cache with per-endpoint TTL:
 
 | Endpoint Category | TTL |
 |-------------------|-----|
-| Home / Spotlight | 2 minutes |
-| Search | 3 minutes |
-| Anime Info | 5 minutes |
-| Streaming | 1 minute |
-| Rankings / Lists | 10 minutes |
+| Home | 10 minutes |
+| Search / Suggestions | 5 minutes |
+| Anime Info | 10 minutes |
+| Episodes / Servers | 5–10 minutes |
+| Stream | 3 minutes |
+| Spotlight / Trending | 10 minutes |
+| Schedule | 30 minutes |
+| Genres / Types / Status | 60 minutes |
+| Anything else | 5 minutes (default) |
 
 Cache stats available at `/api/cache/stats`.
 
@@ -302,21 +291,22 @@ Cache stats available at `/api/cache/stats`.
 
 ## // === ERROR RESPONSES ===
 
-All errors return JSON with a consistent structure:
+All errors return JSON with a consistent structure — the same envelope shape as a success response, just with `success: false`:
 
 ```json
 {
-  "error": true,
-  "message": "Description of what went wrong",
-  "status": 404
+  "success": false,
+  "message": "Description of what went wrong"
 }
 ```
 
 | Status | Meaning |
 |--------|---------|
 | 400 | Bad request / missing parameters |
+| 403 | Stream proxy: domain or content rejected |
 | 404 | Resource not found |
-| 429 | Rate limit exceeded |
+| 413 | Request body too large |
+| 429 | Rate limit exceeded (response includes a `retryAfter` seconds field) |
 | 500 | Internal server error |
 
 ---
@@ -325,7 +315,7 @@ All errors return JSON with a consistent structure:
 
 | File | Description |
 |------|-------------|
-| [endpoints.md](./endpoints.md) | Full API reference for all 38+ endpoints |
+| [endpoints.md](./endpoints.md) | Full API reference for all 43 endpoints |
 | [streaming.md](./streaming.md) | Complete streaming workflow guide |
 | [examples.md](./examples.md) | Working code examples in cURL, JS, Python |
 | [architecture.md](./architecture.md) | Project structure and design patterns |
@@ -355,8 +345,8 @@ npm run dev
 ### Guidelines
 
 - Follow existing code style and patterns
-- Add scrapers in `scrapers/` for new pages
-- Add route handlers in `api/` for new endpoints
+- Add extractors in `src/extractors/` for new scraped pages
+- Add controllers in `src/controllers/` and routes in `src/routes/apiRoutes.js` for new endpoints
 - Update documentation when adding features
 - Test all changes before submitting
 

@@ -28,16 +28,21 @@ npm run dev
 
 ```
 AniKotoAPI/
-├── server.js              # Express entry point
+├── server.js              # Express entry point — API + reverse proxy to frontend/
 ├── src/
 │   ├── configs/           # URL patterns, headers, ID mappings
 │   ├── controllers/       # Route handlers
 │   ├── extractors/        # HTML scrapers (Cheerio)
-│   ├── helper/            # Cache utilities
+│   ├── helper/            # Cache, mirror failover, and other utilities
 │   └── routes/            # Express routes
-├── public/                # Static files (landing page)
+├── frontend/              # Next.js app — spawned as a child process by server.js
+│                          # and reverse-proxied so it serves the main site at "/"
+├── public/                # Static files, including the standalone /web
+│                          # vanilla JS/HTML/CSS anime browsing + player app
 └── docs/                  # API documentation
 ```
+
+`server.js` runs all of this behind a single port: `/api/*` is the REST API, everything else is proxied to the Next.js app in `frontend/`, and `/web` serves the self-contained player app straight out of `public/web/`.
 
 ## Adding a New Endpoint
 

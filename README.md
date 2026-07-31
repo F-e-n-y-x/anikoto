@@ -22,15 +22,15 @@
   <img src="https://img.shields.io/badge/Cheerio-1.0-3572A5?style=flat-square&logoColor=white" alt="Cheerio"/>
   <img src="https://img.shields.io/badge/Vercel-Serverless-000000?style=flat-square&logo=vercel&logoColor=white" alt="Vercel"/>
   <img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square&logo=mit&logoColor=white" alt="License"/>
-  <img src="https://img.shields.io/badge/Version-2.2.0-f43f8e?style=flat-square&logoColor=white" alt="Version"/>
-  <img src="https://img.shields.io/badge/Endpoints-38-6366f1?style=flat-square&logoColor=white" alt="Endpoints"/>
+  <img src="https://img.shields.io/badge/Version-2.3.0-f43f8e?style=flat-square&logoColor=white" alt="Version"/>
+  <img src="https://img.shields.io/badge/Endpoints-43-6366f1?style=flat-square&logoColor=white" alt="Endpoints"/>
   <img src="https://img.shields.io/badge/Anime-10000+-a855f7?style=flat-square&logoColor=white" alt="Anime Database"/>
 </p>
 
 <p align="center">
-  <b>A complete RESTful API scraping real-time anime data from anikototv.to</b><br/>
-  Search, browse, filter, watch — every endpoint returns live data with smart caching and multi-mirror fallback.<br/>
-  Built for building anime websites, apps, and bots.
+  <b>A RESTful anime data API, a full browsing website, and a standalone video player — all served from one process.</b><br/>
+  Search, browse, filter, watch — every endpoint returns live data scraped from anikototv.to with smart caching and multi-mirror fallback.<br/>
+  Built for building anime websites, apps, and bots, or used directly as a full anime-watching site out of the box.
 </p>
 
 <p align="center">
@@ -58,6 +58,7 @@
 - [Anime Data Source](#-anime-data-source)
 - [Tech Stack](#-tech-stack)
 - [Architecture](#-architecture)
+- [Frontend & Web Player](#-frontend--web-player)
 - [Project Structure](#-project-structure)
 - [Quick Start](#-quick-start)
 - [Configuration](#-configuration)
@@ -80,14 +81,21 @@
 
 ## 🌸 Overview
 
-**AniKotoAPI** is a serverless anime data API that scrapes and serves real-time information from **anikototv.to** — including anime details, episode lists, streaming servers, search, filtering, rankings, and more — all through a clean REST API with zero database setup.
+**AniKotoAPI** is three things running out of one Node process on one port:
+
+1. A REST API (`/api/*`) that scrapes and serves real-time information from **anikototv.to** — anime details, episode lists, streaming servers, search, filtering, rankings, and more — with zero database setup.
+2. A full Next.js browsing website (everything under `/`), spawned internally by the API server and reverse-proxied through it.
+3. A self-contained, dependency-free vanilla JS/HTML/CSS anime browsing + video player app at `/web`, with its own search, watch history, and a custom HLS player.
+
+You can use just the API in your own app/bot, or run the whole thing and get a working anime site out of the box.
 
 > [!TIP]
-> No Database, No Auth, No Complex Setup. Just deploy to Vercel and you have a production API.
+> No Database, No Auth, No Complex Setup. `npm start` and you have a production API *and* a working website.
 
 ### Why AniKotoAPI?
 
-- 🎬 **38 Endpoints** — Complete coverage of anikototv.to data
+- 🎬 **43 Endpoints** — Complete coverage of anikototv.to data
+- 🌐 **Full Website Included** — Not just an API: a Next.js frontend and a standalone `/web` player ship in the same repo, on the same port
 - 🔍 **Full-Text Search** — Search anime by keyword with suggestions
 - 📺 **Episode Lists** — AJAX-loaded episode data with server info
 - 🎯 **Smart Filtering** — Genre, type, status, rating, sort, season, year
@@ -95,15 +103,22 @@
 - 🎲 **Random Anime** — Random anime discovery endpoint
 - ⚡ **Smart Caching** — LRU cache with configurable TTL per endpoint
 - 🌐 **Multi-Mirror Fallback** — Automatic failover across 5 mirror domains
+- 🛡️ **Content-Verified Stream Proxy** — Video segments are verified by byte signature, not just domain, so legitimate CDNs aren't mistaken for ads
 - 🚀 **Response Compression** — Gzip compression for faster responses
 - 📊 **Live Data** — Every response is fresh from the actual website
 
 ### How It Works
 
+One Express process on one port routes every request three ways: API calls are served directly, everything else is handed to an internally-spawned Next.js frontend, and `/web` serves a separate static single-page app.
+
 ```mermaid
 flowchart TD
-    A["🌐 Client Request<br/>(Browser / App / curl)"] --> B["🛡️ Vercel Edge / Express Server<br/>CORS · Security Headers · Rate Limiting"]
-    B --> C{"💾 Cache Check<br/>(LRU with TTL)"}
+    A["🌐 Client Request<br/>(Browser / App / curl)"] --> B["🛡️ Express Server (server.js)<br/>CORS · Security Headers · Rate Limiting"]
+    B --> R{"Path?"}
+    R -- "/api/*" --> C{"💾 Cache Check<br/>(LRU with TTL)"}
+    R -- "/web/*" --> W["📺 Static /web app<br/>vanilla JS browser + player"]
+    R -- "everything else" --> P["▲ Reverse Proxy<br/>to internal Next.js child"]
+
     C -- HIT --> D["⚡ Return Cached Response<br/>~200ms"]
     C -- MISS --> E["🔍 Cheerio Scraper"]
 
@@ -117,14 +132,20 @@ flowchart TD
     F --> G["Parse HTML<br/>Cheerio Selectors"]
     G --> H["Cache + Respond<br/>JSON + Gzip"]
 
+    P --> N["Next.js frontend (frontend/)<br/>fetches the same /api/* internally"]
+
     style A fill:#1e1e2e,stroke:#a78bfa,color:#f1f5f9
     style B fill:#1e1e2e,stroke:#6366f1,color:#f1f5f9
+    style R fill:#1e1e2e,stroke:#f59e0b,color:#f1f5f9
     style C fill:#1e1e2e,stroke:#f43f8e,color:#f1f5f9
     style D fill:#1e1e2e,stroke:#22c55e,color:#f1f5f9
     style E fill:#1e1e2e,stroke:#06b6d4,color:#f1f5f9
     style F fill:#1e1e2e,stroke:#a855f7,color:#f1f5f9
     style G fill:#1e1e2e,stroke:#f43f8e,color:#f1f5f9
     style H fill:#1e1e2e,stroke:#22c55e,color:#f1f5f9
+    style W fill:#1e1e2e,stroke:#06b6d4,color:#f1f5f9
+    style P fill:#1e1e2e,stroke:#a855f7,color:#f1f5f9
+    style N fill:#1e1e2e,stroke:#6366f1,color:#f1f5f9
 ```
 
 ---
@@ -138,7 +159,7 @@ flowchart TD
 ### ⚡ Core
 - **Real-time scraping** from anikototv.to
 - **Smart caching** with LRU and configurable TTL per endpoint
-- **38 RESTful endpoints** covering all data
+- **43 RESTful endpoints** covering all data
 - **AJAX episode loading** for accurate data
 - **Mapper API integration** for extra servers
 - **Graceful error handling** per endpoint
@@ -183,13 +204,36 @@ flowchart TD
 
     </td>
   </tr>
+  <tr>
+    <td>
+
+### 🌐 Website & Player
+- **Full Next.js frontend** — spawned internally, reverse-proxied at `/`
+- **Standalone `/web` app** — vanilla JS/HTML/CSS, no build step, no framework
+- **Custom HLS video player** — quality selector, skip intro/outro, keyboard shortcuts
+- **Watch history & continue watching** — tracked locally per browser
+- **Raw endpoint tester** at `/web/api-tester`
+
+    </td>
+    <td>
+
+### 🛡️ Security
+- **Content-verified stream proxy** — segments checked by byte signature, not just domain
+- **DNS-resolved SSRF guard** — blocks private/internal/metadata addresses before any proxied fetch
+- **CSP, HSTS, X-Frame-Options** and other security headers on every response
+- **Configurable rate limiting** — per-IP, sliding window
+- **Request body size limits** to prevent large-payload abuse
+
+    </td>
+  </tr>
 </table>
 
 ### 🌟 Feature Highlights
 
 | Feature | Description | Status |
 |:---|:---|:---:|
-| 🎬 38 API Endpoints | Complete coverage of anime data | ✅ |
+| 🎬 43 API Endpoints | Complete coverage of anime data | ✅ |
+| 🌐 Full Website | Next.js frontend + standalone `/web` player, one port | ✅ |
 | 🔍 Full-Text Search | Keyword search with pagination | ✅ |
 | 📺 Episode Lists | AJAX-loaded episode data | ✅ |
 | 🎯 Advanced Filtering | Genre, type, status, rating, sort, season | ✅ |
@@ -199,9 +243,8 @@ flowchart TD
 | 🔗 Stream URL Resolution | Resolve embed URLs to m3u8/mp4 | ✅ |
 | 📋 AZ List | A-Z alphabetical browsing | ✅ |
 | 🔄 Smart Caching | LRU cache with configurable TTL | ✅ |
-| 🌐 M3U8 Proxy | CORS-free HLS proxy with URL rewriting | ✅ |
-| 🚀 One-Click Deploy | Vercel button deployment | ✅ |
-| 🏗️ Express Mode | Standalone server with `npm start` | ✅ |
+| 🌐 M3U8 Proxy | Content-verified HLS proxy with URL rewriting | ✅ |
+| 🏗️ Single-Process Deploy | `npm start` runs API + website together | ✅ |
 | 📖 Full JSDoc Docs | Complete documentation coverage | ✅ |
 
 ---
@@ -230,24 +273,39 @@ flowchart TD
 
 ## 🛠️ Tech Stack
 
+**Backend / API** (`package.json`)
+
 | Technology | Purpose | Version | Documentation |
 |:---|:---|:---|:---|
 | 🟢 [Node.js](https://nodejs.org/) | JavaScript runtime | >= 20 | [Docs](https://nodejs.org/docs/) |
 | ⚡ [Express](https://expressjs.com/) | HTTP server framework | 4.21 | [Docs](https://expressjs.com/en/4x/api.html) |
-| ▲ [Vercel Functions](https://vercel.com/docs/functions) | Serverless deployment | — | [Docs](https://vercel.com/docs/functions) |
 | 🔍 [Cheerio](https://cheerio.js.org/) | HTML parsing & scraping | 1.0 | [Docs](https://cheerio.js.org/docs/) |
 | 🌐 [Axios](https://axios-http.com/) | HTTP client for scraping | 1.8 | [Docs](https://axios-http.com/docs/intro) |
+| 🔀 [http-proxy-middleware](https://github.com/chimurai/http-proxy-middleware) | Reverse-proxies non-API traffic to the Next.js frontend | 4.2 | [Docs](https://github.com/chimurai/http-proxy-middleware) |
+| 🗜️ [compression](https://github.com/expressjs/compression) | Gzip response compression | 1.8 | [Docs](https://github.com/expressjs/compression) |
 | 🔧 [dotenv](https://github.com/motdotla/dotenv) | Environment variables | 16.4 | [Docs](https://github.com/motdotla/dotenv) |
 
-### 📦 Key Dependencies
+**Frontend** (`frontend/package.json` — spawned internally by `server.js`, see [Architecture](#-architecture))
+
+| Technology | Purpose | Version |
+|:---|:---|:---|
+| ▲ [Next.js](https://nextjs.org/) | App Router frontend framework | 15.5 |
+| ⚛️ [React](https://react.dev/) | UI library | 19.1 |
+| 🎨 [Tailwind CSS](https://tailwindcss.com/) | Utility-first styling | v4 |
+| 🔷 [TypeScript](https://www.typescriptlang.org/) | Static typing | 5.x |
+
+**`/web` player** (`public/web/`) — no framework, no build step: plain HTML/CSS/JS plus [hls.js](https://github.com/video-dev/hls.js/) for HLS playback in the browser.
+
+### 📦 Key Backend Dependencies
 
 ```json
 {
-  "express": "^4.21.0",        // HTTP server
-  "axios": "^1.8.0",           // HTTP client for scraping
-  "cheerio": "^1.0.0-rc.12",   // HTML parsing
-  "compression": "^1.7.4",     // Response compression
-  "dotenv": "^16.4.0"          // Environment variables
+  "express": "^4.21.0",              // HTTP server
+  "axios": "^1.8.0",                 // HTTP client for scraping
+  "cheerio": "^1.0.0-rc.12",         // HTML parsing
+  "compression": "^1.8.1",           // Response compression
+  "http-proxy-middleware": "^4.2.0", // Reverse proxy to the Next.js frontend
+  "dotenv": "^16.4.0"                // Environment variables
 }
 ```
 
@@ -255,16 +313,25 @@ flowchart TD
 
 ## 🏗️ Architecture
 
+`server.js` is the single entry point for everything. On startup it:
+1. Registers all `/api/*` routes directly (see [Request Flow](#request-flow) below).
+2. If `frontend/` exists, spawns it as a child process (`npm run dev` or `npm run start` depending on `NODE_ENV`) on an internal-only port (`NEXT_INTERNAL_PORT`, default `4001`), then reverse-proxies every other request to it via `http-proxy-middleware`.
+3. Serves the standalone `/web` app straight from `public/web/` via `express.static`, with explicit `Cache-Control: no-cache` on its HTML so fixes there are never stuck behind a stale cached copy.
+
+If `frontend/` isn't present (e.g. a minimal API-only checkout), the server logs a notice and runs in API-only mode automatically — no config needed either way.
+
 ### Request Flow
 
 | Stage | Component | Description |
 |:-----:|-----------|-------------|
 | 1 | **Client** | Browser, app, or `curl` sends request |
-| 2 | **Vercel Edge / Express** | Routes request, applies CORS + security headers |
-| 3 | **Cache Check** | LRU cache with endpoint-specific TTL — hit = instant response |
-| 4 | **Scrape Source** | Axios fetches HTML from anikototv.to with multi-mirror fallback |
-| 5 | **Parse HTML** | Cheerio extracts data using CSS selectors |
-| 6 | **Cache + Respond** | Store in cache, return JSON response |
+| 2 | **Express (`server.js`)** | Routes by path, applies CORS + security headers + rate limiting |
+| 3a | **`/api/*`** | Cache check (LRU, TTL per endpoint) → scrape on miss → JSON response |
+| 3b | **`/web/*`** | Served statically from `public/web/` |
+| 3c | **everything else** | Reverse-proxied to the internally-spawned Next.js frontend |
+| 4 | **Scrape Source** *(API path only)* | Axios fetches HTML from anikototv.to with multi-mirror fallback |
+| 5 | **Parse HTML** *(API path only)* | Cheerio extracts data using CSS selectors |
+| 6 | **Cache + Respond** *(API path only)* | Store in cache, return JSON response |
 
 ### Caching Architecture
 
@@ -287,7 +354,21 @@ flowchart TD
 ```
 
 > [!TIP]
->  Serverless functions have read-only filesystems except `/tmp`. The cache uses LRU with configurable TTL per endpoint type, surviving across warm invocations.
+> The cache is an in-memory LRU with configurable TTL per endpoint type, living for the lifetime of the Node process. Running as a standalone/Docker/Render process (the recommended model — see [Deployment](#-deployment)) means it persists across requests indefinitely; on Vercel's serverless functions it only survives across warm invocations of the same instance, and the frontend/`/web` spawn model isn't compatible with serverless at all (see the Vercel note in Deployment).
+
+---
+
+## 🌐 Frontend & Web Player
+
+Two separate UIs ship alongside the API, both reachable through the same port `server.js` listens on:
+
+| Surface | Route | What it is |
+|:---|:---|:---|
+| **Next.js frontend** | `/` (everything not `/api/*` or `/web/*`) | A full Next.js 15 App Router site — home, discover, search, anime detail, watch pages, schedule. Runs as a separate internal process (`frontend/`), spawned by `server.js` and reverse-proxied transparently; server-rendered pages fetch the same `/api/*` endpoints internally via `API_INTERNAL_BASE`. |
+| **`/web` player** | `/web` | A single self-contained HTML file (`public/web/index.html`, no build step, no framework) with its own search, browsing, anime detail, a custom HLS video player (quality switching, skip intro/outro, keyboard shortcuts), and locally-tracked watch history/continue-watching. |
+| **API tester** | `/web/api-tester` | A raw endpoint tester for hitting any `/api/*` route directly from the browser, useful when developing against this API. |
+
+Both UIs are optional from the API's point of view — you can ignore them entirely and just call `/api/*` from your own app, or run the repo as-is and get a working anime site immediately.
 
 ---
 
@@ -295,44 +376,52 @@ flowchart TD
 
 ```
 AniKotoAPI/
-├── 📂 public/                            # 🌐 Static files
-│   ├── 📄 index.html                     #    📖 Premium landing page (SVG icons, live console)
-│   ├── 📄 404.html                       #    ❌ Custom 404 error page (glitch animation)
+├── 📂 frontend/                          # ▲ Next.js website (spawned internally, see Architecture)
+│   ├── 📂 src/                           #    App Router pages, components, lib
+│   └── 📄 package.json                   #    Its own deps — Next.js 15, React 19, Tailwind v4
+│
+├── 📂 public/                            # 🌐 Static files served directly by Express
+│   ├── 📄 index.html                     #    📖 Landing page
+│   ├── 📄 404.html                       #    ❌ Custom 404 error page
 │   ├── 📄 tos.html                       #    📋 Terms of Service (served at /tos)
 │   ├── 📄 privacy.html                   #    🔒 Privacy Policy (served at /privacy)
-│   ├── 📄 manifest.json                  #    📱 PWA manifest (theme: #A855F7)
+│   ├── 📄 manifest.json                  #    📱 PWA manifest
 │   ├── 📄 robots.txt                     #    🤖 Crawler directives
-│   ├── 📄 sitemap.xml                    #    🗺️ Sitemap (4 pages: /, /tos, /privacy, /api)
-│   ├── 📄 og-image.svg                   #    🖼️ SVG Open Graph image
+│   ├── 📄 sitemap.xml                    #    🗺️ Sitemap
 │   │
-│   ├── 📂 docs/                          #    📚 API documentation
-│   │   ├── 📄 index.md                   #       Overview, quick start
-│   │   ├── 📄 endpoints.md               #       Full API reference (38 endpoints)
-│   │   ├── 📄 streaming.md               #       Streaming flow guide + proxy
-│   │   ├── 📄 examples.md                #       Code examples (cURL, JS, Python)
-│   │   ├── 📄 architecture.md            #       Project structure, tech stack
-│   │   └── 📄 testing.md                 #       Integration test suite & benchmarks
-│   │
+│   └── 📂 web/                           #    📺 Standalone browsing + player app (see Frontend & Web Player)
+│       ├── 📄 index.html                 #       The whole app — no build step, no framework
+│       ├── 📂 api-tester/                #       Raw endpoint tester at /web/api-tester
+│       └── 📂 vendor/                    #       Self-hosted fonts + hls.js
 │
-├── 📂 src/                               # ⚙️ Core logic
+├── 📂 docs/                               # 📚 API documentation
+│   ├── 📄 index.md                       #    Overview, quick start
+│   ├── 📄 endpoints.md                   #    Full API reference (43 endpoints)
+│   ├── 📄 streaming.md                   #    Streaming flow guide + proxy security model
+│   ├── 📄 examples.md                    #    Code examples (cURL, JS, Python)
+│   ├── 📄 architecture.md                #    Project structure, tech stack
+│   └── 📄 testing.md                     #    Integration test suite & benchmarks
+│
+├── 📂 src/                               # ⚙️ API core logic
 │   ├── 📂 configs/                       #    🔧 Configuration files
 │   │   ├── 📄 dataUrl.js                 #       🌐 URL patterns for anikototv.to
 │   │   ├── 📄 header.config.js           #       📋 Request headers
-│   │   └── 📄 ids.config.js              #       🏷️ Genre/Type/Status/Source/Season ID mappings
+│   │   ├── 📄 ids.config.js              #       🏷️ Genre/Type/Status/Source/Season ID mappings
+│   │   └── 📄 streamProxy.config.js      #       🛡️ Stream domain allowlist + SSRF/content-signature guards
 │   │
-│   ├── 📂 controllers/                   #    🎮 Route handlers (28 files)
+│   ├── 📂 controllers/                   #    🎮 Route handlers (27 files)
 │   │   ├── 📄 homeInfo.controller.js
 │   │   ├── 📄 animeInfo.controller.js
 │   │   ├── 📄 search.controller.js
 │   │   ├── 📄 episodeList.controller.js
 │   │   ├── 📄 episodeListAjax.controller.js
 │   │   ├── 📄 streamInfo.controller.js
-│   │   ├── 📄 streamResolver.controller.js  # 🆕 Stream URL resolution + quality detection
+│   │   ├── 📄 streamResolver.controller.js  # Stream URL resolution + quality detection
 │   │   ├── 📄 filter.controller.js
 │   │   ├── 📄 watchPage.controller.js
-│   │   └── 📄 ... (15 more)
+│   │   └── 📄 ... (18 more)
 │   │
-│   ├── 📂 extractors/                    #    🔍 HTML scrapers (28 files)
+│   ├── 📂 extractors/                    #    🔍 HTML scrapers (27 files)
 │   │   ├── 📄 homeInfo.extractor.js      #       🏠 Home page data
 │   │   ├── 📄 search.extractor.js        #       🔍 Search results
 │   │   ├── 📄 animeInfo.extractor.js     #       📺 Anime details
@@ -343,27 +432,27 @@ AniKotoAPI/
 │   │   ├── 📄 seasons.extractor.js       #       📅 Season info from watch page
 │   │   ├── 📄 watchOrder.extractor.js    #       📋 Watch order from sidebar
 │   │   ├── 📄 episodeList.extractor.js   #       📋 Episode lists
-│   │   └── 📄 ... (16 more)
+│   │   └── 📄 ... (17 more)
 │   │
 │   ├── 📂 helper/                        #    🛠️ Utility functions
-│   │   ├── 📄 cache.helper.js            #       💾 In-memory caching
+│   │   ├── 📄 cache.helper.js            #       💾 In-memory LRU caching
 │   │   ├── 📄 countPages.helper.js       #       📄 Pagination counter
 │   │   ├── 📄 extractPages.helper.js     #       📃 Page fetcher
-│   │   ├── 📄 formatTitle.helper.js      #       🔤 Title formatter
 │   │   ├── 📄 mirror.helper.js           #       🌐 Multi-mirror fallback (5 domains)
 │   │   ├── 📄 parseListItem.helper.js    #       📋 Shared list item parser
-│   │   └── 📄 pagination.helper.js       #       📊 Pagination metadata generator
-│   │
-│   ├── 📂 middleware/                    #    🔧 Express middleware
-│   │   └── 📄 creatorInfo.js            #       ✍️ Creator attribution injection
+│   │   ├── 📄 pagination.helper.js       #       📊 Pagination metadata generator
+│   │   ├── 📄 slug.helper.js             #       🔗 Slug extraction from hrefs
+│   │   └── 📄 streamSegmentGuard.helper.js # 🛡️ Content-signature validation for stream segments
 │   │
 │   └── 📂 routes/                        #    🛤️ Express routes
-│       ├── 📄 apiRoutes.js               #       🌐 Main API routes (38 endpoints)
-│       └── 📄 category.route.js          #       🏷️ Category routes
+│       ├── 📄 apiRoutes.js               #       🌐 Main API routes + M3U8/TS proxy
+│       └── 📄 category.route.js          #       🏷️ Genre/type/status category routes
 │
-├── 📄 server.js                          # 🚀 Express server entry point
-├── 📄 package.json                       # 📦 Dependencies & scripts
-├── 📄 vercel.json                        # ▲ Vercel routing & headers config
+├── 📄 server.js                          # 🚀 Entry point — API + frontend spawn + /web static serving
+├── 📄 package.json                       # 📦 Backend dependencies & scripts
+├── 📄 Dockerfile                         # 🐳 Builds backend + frontend together
+├── 📄 render.yaml                        # 🖥️ Render deployment config
+├── 📄 vercel.json                        # ▲ Vercel config — API-only, see Deployment
 ├── 📄 CHANGELOG.md                       # 📝 Version history
 ├── 📄 LICENSE                            # 📜 MIT License
 └── 📄 README.md                          # 📖 This file
@@ -388,19 +477,25 @@ AniKotoAPI/
 git clone https://github.com/Shineii86/AniKotoAPI.git
 cd AniKotoAPI
 
-# 2️⃣ Install dependencies
+# 2️⃣ Install backend dependencies
 npm install
 
-# 3️⃣ Start development server
+# 3️⃣ Install frontend dependencies (skip this if you only want the API — server.js
+#    detects a missing frontend/ install and falls back to API-only automatically)
+cd frontend && npm install && cd ..
+
+# 4️⃣ Start development server (API + frontend + /web, all on one port)
 npm run dev
 ```
 
-> 🌐 Open [http://localhost:4444](http://localhost:4444) in your browser.
+> 🌐 Open [http://localhost:4444](http://localhost:4444) — the frontend home page. The API lives under `/api/*` and the standalone player under `/web`.
 
 ### 🏗️ Build for Production
 
 ```bash
-# Start production server
+# The frontend needs a production build before "npm start" can serve it —
+# Dockerfile and render.yaml already do this for you; for a manual/VPS deploy:
+cd frontend && npm run build && cd ..
 npm start
 ```
 
@@ -439,13 +534,13 @@ bun dev
 | `CACHE_DEFAULT_TTL` | `300000` | Default cache entry lifetime in milliseconds |
 | `MIRROR_DOMAINS` | *(built-in list)* | Comma-separated mirror domains to try, in priority order |
 | `MIRROR_CACHE_TTL` | `3600000` | How long a discovered working mirror is cached, in milliseconds |
+| `NEXT_INTERNAL_PORT` | `4001` | Internal-only port the spawned Next.js frontend listens on (never exposed directly — reached only through `server.js`'s reverse proxy) |
+| `API_INTERNAL_BASE` | *(derived from `PORT`)* | Base URL the frontend's server-rendered pages use to call the API internally — set automatically by `server.js` when it spawns the frontend, no need to set it yourself |
 
 ### Vercel Configuration
 
-The `vercel.json` file handles:
-- **Builds** — Maps `server.js` to `@vercel/node`
-- **Routes** — All requests forwarded to Express
-- **Headers** — CORS `Access-Control-Allow-Origin: *`
+> [!WARNING]
+> `vercel.json` deploys **API-only**. It maps `server.js` to a `@vercel/node` serverless function and forwards all requests to it, but Vercel's serverless functions can't run the spawned Next.js frontend child process this project uses everywhere else — so on Vercel, only `/api/*` will actually work. For the full experience (API + frontend + `/web` player on one port), use [Docker, Render, or a standalone Node process](#-deployment) instead.
 
 ---
 
@@ -2246,56 +2341,74 @@ All list endpoints include pagination metadata in the response:
 
 ## 🌐 Deployment
 
-### ▲ Vercel (Recommended)
+> [!NOTE]
+> This project runs as a persistent Node process (it spawns the frontend as a child process), not a stateless serverless function. **Docker, Render, or a standalone server get you the full API + frontend + `/web` player experience.** Vercel only runs the API — see the note below.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Shineii86/AniKotoAPI)
+### 🐳 Docker (Recommended)
 
-1. Click the button above (or import manually on vercel.com)
-2. Vercel auto-detects the project — **no config needed**
-3. Your API is live! 🎉
-
-```bash
-# Or use Vercel CLI
-npx vercel --prod
-```
-
-### 🖥️ Render
-
-Host your own instance of AniKotoAPI on Render.
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Shineii86/AniKotoAPI)
-
-### 🖥️ Standalone Server
+The included `Dockerfile` installs and builds both the backend and the frontend:
 
 ```bash
-# Clone and install
-git clone https://github.com/Shineii86/AniKotoAPI.git
-cd AniKotoAPI && npm install
-
-# Start production server
-npm start
-# → http://localhost:4444
+docker build -t anikotoapi .
+docker run -p 4444:4444 anikotoapi
 ```
 
-### 🐳 Docker
+<details>
+<summary>What the Dockerfile actually does</summary>
 
 ```dockerfile
 FROM node:18-alpine
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
+COPY frontend/package*.json ./frontend/
+RUN cd frontend && npm ci
 COPY . .
+# frontend/ needs its devDependencies (typescript, tailwindcss, etc.) to
+# build, then they're pruned so the image only ships the runtime pieces
+# server.js actually spawns ("npm run start" -> "next start").
+RUN cd frontend && npm run build && npm prune --omit=dev
 ENV NODE_ENV=production
 EXPOSE 4444
 USER node
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:4444/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 CMD ["npm", "start"]
 ```
 
-Or just build the included `Dockerfile` directly:
+</details>
+
+### 🖥️ Render
+
+Host your own instance — `render.yaml` also installs and builds the frontend before starting.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Shineii86/AniKotoAPI)
+
+### 🖥️ Standalone Server (VPS, etc.)
 
 ```bash
-docker build -t anikotoapi .
-docker run -p 4444:4444 anikotoapi
+# Clone and install
+git clone https://github.com/Shineii86/AniKotoAPI.git
+cd AniKotoAPI
+npm install
+cd frontend && npm install && npm run build && cd ..
+
+# Start production server
+npm start
+# → http://localhost:4444
+```
+
+### ▲ Vercel (API-only)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Shineii86/AniKotoAPI)
+
+1. Click the button above (or import manually on vercel.com)
+2. Vercel auto-detects the project — no config needed for the API itself
+3. `/api/*` is live — the frontend and `/web` player will **not** work here (see the [Vercel Configuration](#vercel-configuration) note above)
+
+```bash
+# Or use Vercel CLI
+npx vercel --prod
 ```
 
 ---
@@ -2336,6 +2449,7 @@ docker run -p 4444:4444 anikotoapi
 
 | Version | Date | Key Changes |
 |:---|:---|:---|
+| **2.3.0** | 2026-07-31 | Documented the merged Next.js frontend + `/web` player; content-verified stream proxy (fixed video playback truncation); pagination/layout fixes; rate limit raised 100→300; dead code removed |
 | **2.2.0** | 2026-07-28 | Streaming resolver, M3U8/TS proxy, 5 new endpoints, bug fixes, full diagnostic sweep |
 | **1.7.2** | 2026-06-08 | Full rebrand AniKotoAPI → AniKotoAPI, docs folder with real data, streaming fix |
 | **1.7.1** | 2026-06-08 | Updated Vercel URL to anikototvapi.vercel.app |
@@ -2362,8 +2476,10 @@ docker run -p 4444:4444 anikotoapi
 | ❎ CORS errors | Frontend domain blocked | CORS is `*` — check browser extension |
 | ❎ 404 on API routes | Wrong URL format | Use `/api/` prefix, not just `/` |
 | ❎ Deploy fails on Vercel | Build error | Check `node server.js` locally first |
+| ❎ Frontend/`/web` blank or erroring on Vercel | Vercel is API-only for this project | Expected — see [Deployment](#-deployment). Use Docker/Render/standalone for the full site |
 | ❎ Slow first request | Serverless cold start | Normal — first request after idle takes ~3s |
-| ❎ Rate limited | Too many requests | Cache reduces this — wait 5 min for TTL expiry |
+| ❎ `429 Rate limit exceeded` | More than `RATE_LIMIT` (default 300) requests/min from your IP | The error includes `retryAfter` (seconds) — wait that long, or raise `RATE_LIMIT` for your own deployment |
+| ❎ `next dev`/`next start` fails inside the spawned frontend | `frontend/node_modules` (or its production build) missing | Run `cd frontend && npm install` (and `npm run build` for production) — see [Quick Start](#-quick-start) |
 
 ### 🐛 Debug Mode
 
@@ -2420,7 +2536,13 @@ The cache uses an LRU strategy with per-endpoint TTLs ranging from 3 minutes (se
 <details>
 <summary><b>🌐 Can I self-host this?</b></summary>
 <br/>
-Yes! Use <code>npm start</code> to run the Express server on any VPS, Docker container, or PaaS. The Vercel serverless functions are optional — <code>server.js</code> handles everything.
+Yes! Use <code>npm start</code> to run the Express server (API + frontend + <code>/web</code>) on any VPS, Docker container, or PaaS — <code>server.js</code> handles everything as one process. Build the frontend first (<code>cd frontend && npm run build</code>) if you're not using the included Dockerfile, which already does this for you. Vercel is API-only for this project — see <a href="#-deployment">Deployment</a>.
+</details>
+
+<details>
+<summary><b>🌸 What's the difference between the frontend and the <code>/web</code> player?</b></summary>
+<br/>
+Both are optional UIs on top of the same API and ship in the same repo. The <b>frontend</b> (<code>/</code>) is a full Next.js site, spawned by <code>server.js</code> as its own process and reverse-proxied through. <code>/web</code> is a completely separate, self-contained single HTML file (<code>public/web/index.html</code>) with no framework or build step — its own search, browsing, and a custom HLS player. You can use either, both, or neither (just call <code>/api/*</code> directly).
 </details>
 
 <details>
@@ -2437,18 +2559,18 @@ The API can access 10,000+ anime titles from anikototv.to. The most-popular endp
 
 - [ ] 🔐 **API key authentication** — Per-user rate limits
 - [ ] 📊 **Analytics endpoint** — Usage statistics
-- [ ] 🌙 **Dark/light mode** — Theme toggle for landing page
-- [ ] 📱 **PWA support** — Install as app on mobile
 - [ ] 🔔 **Webhook notifications** — Push new episodes to Discord
-- [ ] 📈 **Rate limiting** — Per-IP request throttling
-- [ ] 🗄️ **Redis cache** — Persistent caching for serverless
+- [ ] 🗄️ **Redis cache** — Persistent caching across instances/serverless
 - [ ] 🌐 **Multi-language** — Sub/dub language metadata
 - [ ] 🤖 **AI summaries** — Auto-generated anime descriptions
 - [ ] 📦 **NPM package** — Client SDK for easy integration
+- [ ] 🧪 **Real test coverage** — `test.js` is currently a live-network smoke test, not a mocked regression suite
 
 ### ✅ Completed
 
-- [x] 🎬 38 API endpoints covering all data
+- [x] 🎬 43 API endpoints covering all data
+- [x] 🌐 Full Next.js frontend + standalone `/web` browsing/player app, merged into a single-port deployment
+- [x] 🛡️ Content-verified stream proxy — real MPEG-TS/fMP4 signature check instead of domain-allowlist-only
 - [x] 🔍 Full-text search with pagination
 - [x] 📺 Episode lists via AJAX loading
 - [x] 🎯 Advanced filtering (genre, type, status, rating, sort, season, year)
@@ -2460,13 +2582,12 @@ The API can access 10,000+ anime titles from anikototv.to. The most-popular endp
 - [x] 📋 AZ List alphabetical browsing
 - [x] 📅 Seasons and watch order extraction
 - [x] 🔄 Smart caching with LRU and configurable TTL
-- [x] 🚀 One-click Vercel deployment
+- [x] 📈 Configurable per-IP rate limiting
+- [x] 🐳 One-command Docker/Render deployment (API + frontend, built together)
 - [x] 📖 Comprehensive documentation with real API data
 - [x] 🏗️ Full JSDoc documentation coverage
-- [x] 🌐 Premium landing page with SVG icons
-- [x] 📱 PWA manifest and Open Graph image
+- [x] 📱 PWA manifest
 - [x] 📚 Full docs/ folder with examples
-- [x] 🐛 Full diagnostic sweep — all 34 endpoints passing
 
 ---
 
@@ -2558,7 +2679,9 @@ git push origin feature/amazing-feature
 - **[Express](https://expressjs.com/)** — Fast, unopinionated web framework
 - **[Cheerio](https://cheerio.js.org/)** — Fast, flexible HTML parsing
 - **[Axios](https://axios-http.com/)** — Promise-based HTTP client
-- **[Vercel](https://vercel.com/)** — Serverless deployment platform
+- **[Next.js](https://nextjs.org/)** & **[React](https://react.dev/)** — The merged frontend
+- **[hls.js](https://github.com/video-dev/hls.js/)** — HLS playback for the `/web` player
+- **[Vercel](https://vercel.com/)** — Serverless deployment platform (API-only for this project)
 
 ### 📝 Resources
 

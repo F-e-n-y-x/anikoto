@@ -369,11 +369,11 @@ curl -s "https://anikototvapi.vercel.app/api/stream/qualities?url=https%3A%2F%2F
 
 | Param  | Type   | Description                                    |
 |--------|--------|------------------------------------------------|
-| `url`  | string | M3U8 URL (must be from an allowed domain)      |
+| `url`  | string | M3U8 URL                                       |
 
 Returns rewritten M3U8 content with `Content-Type: application/vnd.apple.mpegurl`.
 
-**Allowed domains:** `vidtube.site`, `vidplay.site`, `megaplay.buzz`, `megaplay-1.buzz`, `cdn.anipixcdn.co`
+**Trusted domains** (allowed instantly, no content check): `vidtube.site`, `vidplay.site`, `megaplay.buzz`, `kotocdn.site`, `cdn.anipixcdn.co`, `mewstream.buzz`, `g4stw.livedns.my`. Segment/playlist URLs from other domains are no longer rejected outright — see [Security Model](#security-model) below.
 
 ```bash
 curl -s "https://anikototvapi.vercel.app/api/stream/proxy?url=https://vidtube.site/hls/abc123/master.m3u8"
@@ -503,17 +503,24 @@ Browser                AniKotoAPI Proxy           Upstream CDN
   │  ... (repeat for each segment)                    │
 ```
 
-### Allowed Domains
+### Security Model
 
-The proxy only serves URLs from these whitelisted domains:
+Domains in the trusted allowlist are served instantly, no further checks:
 
 - `vidtube.site`
 - `vidplay.site`
 - `megaplay.buzz`
-- `megaplay-1.buzz`
+- `kotocdn.site`
 - `cdn.anipixcdn.co`
+- `mewstream.buzz`
+- `g4stw.livedns.my`
 
-Requests with URLs from other domains will be rejected.
+This is **not** a strict "allowlist-only, reject everything else" model. Segment/playlist CDNs rotate per provider and some legitimate ones sit outside the curated list above, so URLs from other domains aren't rejected outright anymore. Instead they go through two checks before being fetched:
+
+1. **Baseline SSRF guard** (`isSafeExternalUrl` in `src/configs/streamProxy.config.js`) — the hostname is DNS-resolved and rejected if any resolved address is a private/loopback/link-local/reserved IP (this closes off the proxy being used to reach internal services or cloud metadata endpoints).
+2. **Content-signature sniffing** (`src/helper/streamSegmentGuard.helper.js`) — the response is checked for a real MPEG-TS sync byte pattern (`0x47` recurring every 188 bytes) or an fMP4/CMAF `ftyp`/`styp` box. Only requests that pass both checks are proxied through; anything that looks like ad-network creative (images, HTML, JSON) instead of real video is dropped.
+
+This exists because some legitimate segment CDNs were previously being wrongly treated as ad decoys under the old allowlist-only model.
 
 ### Usage Example
 
@@ -758,7 +765,7 @@ MP4 files typically have CORS enabled, so no proxy is needed.
 |------|----------------------------------------|---------------------------------------------|
 | 200  | Success                                | Process response                            |
 | 400  | Bad request — missing/invalid params   | Check query parameters                      |
-| 403  | Forbidden — domain not in allowlist    | Use an allowed domain for proxy URLs        |
+| 403  | Forbidden — URL failed the SSRF/content-signature checks | Verify the URL resolves to a public host and serves real segment/playlist data |
 | 404  | Resource not found                     | Verify slug, episode number, or link_id     |
 | 429  | Rate limited                           | Implement backoff / retry logic             |
 | 500  | Server error                           | Retry after delay; report if persistent     |

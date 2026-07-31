@@ -483,11 +483,18 @@ curl "https://anikototvapi.vercel.app/api/type/tv"
 
 ## GET /status/:name
 
-Get anime by status (airing, completed, upcoming).
+Get anime by status. This is served by the same category route/controller/extractor as `/genre/:name` and `/type/:name` (`category.route.js` → `category.controller.js` → `category.extractor.js`) — there is no separate status controller.
+
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Short status name — mapped internally to the full site slug: `ongoing`/`airing` → `currently-airing`, `completed`/`finished` → `finished-airing`, `upcoming` → `not-yet-aired`. Any other value is passed through as-is. |
+| `page` | number | No | Page number (default: 1) |
 
 ```bash
 curl "https://anikototvapi.vercel.app/api/status/completed"
 ```
+
+Returns a paginated anime list (`totalPages` + `data`), same shape as `/genre/:name` and `/type/:name`. Each item in `data` includes an `animeId` field.
 
 ---
 
@@ -859,7 +866,7 @@ curl "https://anikototvapi.vercel.app/api/health"
   "success": true,
   "results": {
     "status": "healthy",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "uptime": "0h 1m 21s",
     "uptimeSeconds": 81,
     "timestamp": "2026-07-30T02:20:46.153Z",

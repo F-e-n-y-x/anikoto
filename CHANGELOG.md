@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-07-31
+
+### Added
+- **Merged Next.js frontend**: `server.js` spawns a full Next.js app (`frontend/`) as an internal child process (`NEXT_INTERNAL_PORT`, default 4001) and reverse-proxies every non-`/api` request to it, so the REST API and a full browsing UI now share a single port/process — documented here for the first time (the merge itself predates this changelog entry).
+- **Standalone `/web` browsing + player app**: a self-contained, dependency-free vanilla JS/HTML/CSS app (`public/web/index.html`, ~1700 lines) with search, browsing, an anime detail page, a custom HLS video player, watch history, and a raw endpoint tester at `/web/api-tester`.
+- **Content-signature stream segment validation** (`src/helper/streamSegmentGuard.helper.js`, plus `isSafeExternalUrl`/`looksLikeVideoSegment` in `streamProxy.config.js`): segments from CDN domains outside the curated allowlist are no longer rejected outright — they're now verified by their actual byte signature (MPEG-TS/fMP4) before being trusted, alongside a new DNS-resolved private-IP/SSRF baseline guard. Domains in the allowlist are still trusted instantly (no added latency for the common case).
+- **Continuous-fill pagination** for `/web`'s Latest Episode grid — items now accumulate across api-page boundaries instead of resetting, so every row (except the true last one) is always fully packed.
+- **Real Sub/Dub tab data** on `/web`'s home page — now sourced from the same real paginated `/latest-updated` listing "All" uses (filtered client-side by `sub`/`dub` count), instead of a tiny fixed homepage widget that couldn't supply enough items to fill a full grid.
+- **Request-token guards** against out-of-order async responses on pagination arrows and streaming-server switches in `/web`.
+- **Clearer rate-limit errors**: the client now surfaces the server's `retryAfter` value (e.g. "try again in 42s") instead of a generic message.
+
+### Changed
+- **`RATE_LIMIT` default raised from 100 to 300** requests/minute per IP — 100 was measured too tight for normal interactive browsing (a single home-page load alone fires ~5 parallel API calls).
+- **`Dockerfile` / `render.yaml`** now actually install and build `frontend/` before starting — previously the container/deploy silently fell back to API-only with no build step for the Next.js app.
+- **`/web` grid layout** now fills the full container width (column count scales with viewport, no longer hardcoded to a max of 4) — `.card-poster` switched from fixed pixel dimensions to `width:100%` + `aspect-ratio` so cards actually stretch into wider columns instead of leaving unused space.
+- **`fetchWithMirror()`** now also returns the final redirect URL (`finalUrl`), used to route `random.extractor.js` through the same mirror-fallback system as every other extractor (it previously bypassed mirror fallback entirely).
+- **`parseListItems()`** now tries selector candidates in priority order (first non-empty match wins) instead of combining them into one broad CSS query — the old broad query was silently mixing an unrelated homepage sidebar widget's static items into every paginated list result.
+- **`download.extractor.js`**'s nekostream Cloudflare Worker proxy rewrite now matches any subdomain, not just the exact `pahe.` prefix.
+
+### Fixed
+- **Video playback was silently truncated to ~3% of every episode's real runtime.** The M3U8 ad-stripping logic treated any segment outside the domain allowlist as an ad decoy; verified live that ~97% of real episode segments were served from legitimate-but-uncatalogued CDN domains, disguised behind a fake image header (the same trick already known from one other provider). Fixed by the content-signature validation added above.
+- **`/web` pagination appeared to "go back" to earlier content** after a few clicks — root cause was `parseListItems()`'s selector bug (above) mixing a static sidebar widget's ~10 items into every page of `/api/latest-updated`, not a client-side bug.
+- **`/web` home page grid layout** — ragged, partially-empty last rows on both the Latest Episode section and the Upcoming Anime section (a separate, non-paginated grid using the same flawed layout assumptions).
+- **Episode 0 mislabeling**: `episodeList.extractor.js` used `parseInt(data-num) || i + 1`, which silently renumbered a genuine "Episode 0" since `0` is falsy in JS.
+- **Removed dead, unreachable `status.controller.js` / `status.extractor.js`** — the live `/api/status/:status` route has always been served through `category.controller.js`; the dead pair had already drifted to a different response shape.
+- **Mirror domain typo** (`anikoto.se` → `anikototv.se`) fixed across `dataUrl.js`, `render.yaml`, and this README.
+- **`/web` UI/UX**: inaccurate watch-history progress (was wall-clock based, now reads real `video.currentTime`/`duration`), a silent dead-end on unplayable-stream errors, search suggestion dropdown not closing after clicking a result, keyboard volume shortcuts (arrow up/down) not syncing mute state, un-ellipsized text truncation on card titles and the hero description, missing image `alt` attributes across several list views, a WCAG-AA-failing secondary text color in both themes, no responsive breakpoint for the topbar at phone widths, a poster image causing layout shift on load, missing `aria-label`s on pagination arrows, and static player button tooltips that never reflected play/mute/fullscreen state.
+- **`frontend/src/components/ui/button.tsx`** imported `@base-ui/react` and `class-variance-authority`, neither of which was declared in `frontend/package.json` — would have broken `next build` the moment anything used it.
+
+### Removed
+- Dead `src/controllers/status.controller.js` and `src/extractors/status.extractor.js` (see Fixed above).
+
 ## [2.2.0] - 2026-07-28
 
 ### Added
